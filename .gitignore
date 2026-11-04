@@ -1,0 +1,5 @@
+# Credential material — must never be committed to this public repository.
+# Google service-account key used for Drive results upload
+# (google.drive.service.account.key.file in src/test/resources/appProperties.properties).
+yeloautomationresultsdrive-*.json
+Credentials/

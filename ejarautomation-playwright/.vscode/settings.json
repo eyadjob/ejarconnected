@@ -1,0 +1,6 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "editor.fontSize": 18,
+    "editor.codeActions.triggerOnFocusChange": false,
+    "java.configuration.updateBuildConfiguration": "interactive"
+}

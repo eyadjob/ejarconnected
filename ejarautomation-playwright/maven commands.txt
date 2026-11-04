@@ -1,0 +1,6 @@
+mvn -version
+
+maven will run the follwoing test testRunner with naming convection :
+**/Test*.java
+**/*Test.java
+**/*TestCase.java

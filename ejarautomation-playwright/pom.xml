@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.17</maven.compiler.source>
+        <maven.compiler.target>1.17</maven.compiler.target>
+        <property name="defaultEncoding" value="UTF-8"/>
+        <!-- github server corresponds to entry in ~/.m2/settings.xml -->
+        <github.global.server>github</github.global.server>
+        <!-- default: run all TestRunner* classes; profiles override to run a single runner -->
+        <test-classes>**/TestRunner*.java</test-classes>
+    </properties>
+    <modelVersion>4.0.0</modelVersion>
+
+    <profiles>
+        <profile>
+            <id>ejar-verification-forms-ar</id>
+            <properties>
+                <test-classes>**/TestRunner_Ejar_Forms_Verification_Arabic.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>ejar-verification-forms-en</id>
+            <properties>
+                <test-classes>**/TestRunner_Ejar_Forms_Verification_English.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>ejar-verification-views-ar</id>
+            <properties>
+                <test-classes>**/TestRunner_Ejar_Views_Verification_Arabic.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>ejar-verification-views-en</id>
+            <properties>
+                <test-classes>**/TestRunner_Ejar_Views_Verification_English.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>rental-agent-automated-regression-test</id>
+            <properties>
+                <test-classes>**/TestRunner_Rental_Agent_Automated_Regression_Test.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>yelo-verification-en</id>
+            <properties>
+                <test-classes>**/TestRunner_Yelo_Verification_English.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>yelo-verification-ar</id>
+            <properties>
+                <test-classes>**/TestRunner_Yelo_Verification_Arabic.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>yelo-validation-en</id>
+            <properties>
+                <test-classes>**/TestRunner_Yelo_Validation_English.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>yelo-validation-ar</id>
+            <properties>
+                <test-classes>**/TestRunner_Yelo_Validation_Arabic.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>ejar-login-with-ai</id>
+            <properties>
+                <test-classes>**/TestRunner_Ejar_Login_With_AI.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>TestRunner_Yelo_Rental_Agent_en</id>
+            <properties>
+                <test-classes>**/TestRunner_Yelo_Rental_Agent_English.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>TestRunner_Ejar_Existing_Data_English</id>
+            <properties>
+                <test-classes>**/TestRunner_Ejar_Existing_Data_English.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>TestRunner_Yelo_Rental_Agent_V2_en</id>
+            <properties>
+                <test-classes>**/TestRunner_Yelo_Rental_Agent_V2_English.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>TestRunner_Yelo_Rental_Agent_Production</id>
+            <properties>
+                <test-classes>**/TestRunner_Yelo_Rental_Agent_Production.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>TestRunner_Alyam_Validation_English</id>
+            <properties>
+                <test-classes>**/TestRunner_Alyam_Validation_English.java</test-classes>
+            </properties>
+        </profile>
+        <profile>
+            <id>TestRunner_Alyam_Verification_English</id>
+            <properties>
+                <test-classes>**/TestRunner_Alyam_Verification_English.java</test-classes>
+            </properties>
+        </profile>
+    </profiles>
+    <groupId>org</groupId>
+    <artifactId>ejar</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>16</source>
+                    <target>16</target>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.36</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <includes>
+                        <include>${test-classes}</include>
+                    </includes>
+                    <!-- UTF-8: ExtentReports 5.x writes Spark HTML via FileWriter (platform charset). Without this, Arabic and other non‑Latin text becomes "?" on Windows. -->
+                    <!-- Allow Gson/reflection on Throwable for Java 17+ (ExtentReports, etc.) -->
+                    <argLine>--add-opens java.base/java.lang=ALL-UNNAMED -Dfile.encoding=UTF-8</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.5.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputDirectory>${project.build.directory}/dependency-jars/</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencies>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit</artifactId>
+            <version>6.9.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>1.58.0</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/io.cucumber/cucumber-java -->
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-java</artifactId>
+            <version>6.9.1</version>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-testng</artifactId>
+            <version>6.9.1</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/junit/junit -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.10.0</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.testng/testng -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <version>7.8.0</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-io -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.36</version>
+            <scope>provided</scope>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.7.1</version> <!-- Check for latest version -->
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.aspectj/aspectjrt -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.9.6</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/javax.mail/mail -->
+        <dependency>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
+            <version>1.4.7</version>
+        </dependency>
+        <dependency>
+            <groupId>com.aventstack</groupId>
+            <artifactId>extentreports</artifactId>
+            <version>5.0.7</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/tech.grasshopper/extentreports-cucumber6-adapter -->
+        <dependency>
+            <groupId>tech.grasshopper</groupId>
+            <artifactId>extentreports-cucumber6-adapter</artifactId>
+            <version>2.8.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.apache.maven.shared/file-management -->
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>file-management</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.0-alpha1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.graphwalker</groupId>
+            <artifactId>graphwalker-core</artifactId>
+            <version>4.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.media.oldVersion</groupId>
+            <artifactId>java-media</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/drivers/repackaged-sikuli-api-1.0.2-standalone.jar</systemPath>
+        </dependency>
+        <!--                <dependency>-->
+        <!--                    <groupId>com.yelo.core</groupId>-->
+        <!--                    <artifactId>ejar-automation-framework</artifactId>-->
+        <!--                    <version>1.0-SNAPSHOT</version>-->
+        <!--                    <scope>system</scope>-->
+        <!--                    <systemPath>${basedir}/drivers/ejar-automation-framework-1.0-20210502.120804-1.jar</systemPath>-->
+        <!--                </dependency>-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+            <version>3.5</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/javax.faces/jsf-api -->
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>7.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc -->
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <version>8.4.1.jre8</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.13.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.media</groupId>
+            <artifactId>jmf</artifactId>
+            <version>2.1.1e</version>
+        </dependency>
+
+
+        <!-- https://mvnrepository.com/artifact/com.google.apis/google-api-services-drive -->
+
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.7.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.google.apis/google-api-services-drive -->
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-drive</artifactId>
+            <version>v3-rev20211107-1.32.1</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.google.oauth-client/google-oauth-client-jetty -->
+        <dependency>
+            <groupId>com.google.oauth-client</groupId>
+            <artifactId>google-oauth-client-jetty</artifactId>
+            <version>1.32.1</version>
+        </dependency>
+
+        <!-- Google Auth Library: service-account and OAuth2 credentials support -->
+        <dependency>
+            <groupId>com.google.auth</groupId>
+            <artifactId>google-auth-library-oauth2-http</artifactId>
+            <version>1.12.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-driveactivity</artifactId>
+            <version>v2-rev20210319-1.32.1</version>
+        </dependency>
+
+        <!--        ask Eyad about this dependency-->
+        <!-- https://mvnrepository.com/artifact/com.google.api-client/google-api-client -->
+<!--        <dependency>-->
+<!--            <groupId>com.google.api-client</groupId>-->
+<!--            <artifactId>google-api-client</artifactId>-->
+<!--            <version>2.0.0</version>-->
+<!--        </dependency>-->
+
+        <!-- https://mvnrepository.com/artifact/com.google.apis/google-api-services-gmail -->
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-gmail</artifactId>
+            <version>v1-rev110-1.25.0</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.codehaus.groovy/groovy-json -->
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-json</artifactId>
+            <version>3.0.18</version>
+        </dependency>
+        <!-- Gson for Ollama AI client (JSON request/response) -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+        </dependency>
+
+        <!--        <dependency>-->
+<!--            <groupId>com.yelo.core</groupId>-->
+<!--            <artifactId>ejar-automation-framework</artifactId>-->
+<!--            <version>1.0-SNAPSHOT</version>-->
+<!--            <scope>system</scope>-->
+<!--            <systemPath>-->
+<!--                c:/jar/mvn-repo/com/yelo/core/ejar-automation-framework/1.0-SNAPSHOT/ejar-automation-framework-1.0-SNAPSHOT.jar-->
+<!--            </systemPath>-->
+<!--        </dependency>-->
+    </dependencies>
+    <!--        <repository>-->
+    <!--            <id>mvn-repo</id>-->
+    <!--            <url>https://github.com/eyadjob/yeloJar/master</url>-->
+    <!--            <releases>-->
+    <!--                <enabled>true</enabled>-->
+    <!--            </releases>-->
+    <!--            <snapshots>-->
+    <!--                <enabled>true</enabled>-->
+    <!--                <updatePolicy>always</updatePolicy>-->
+    <!--            </snapshots>-->
+    <!--        </repository>-->
+    <!--    </repositories>-->
+</project>
