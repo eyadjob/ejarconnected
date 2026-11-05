@@ -71,16 +71,15 @@ public class GenericStepDefs extends GenericPage {
 
     @And("^user open page using url: (.*)$")
     public void openPage(String url) {
-            navigateToUrl(url);
-            System.out.println("Storing Yelo Base URL :" + DriverFactory.getDriver().url());
-            ScenarioContextSingleton.getInstance().setContextValue("websiteBaseUrl",DriverFactory.getDriver().url());
+        navigateToUrl(url);
+        System.out.println("Storing Yelo Base URL :" + DriverFactory.getDriver().url());
+        ScenarioContextSingleton.getInstance().setContextValue("websiteBaseUrl",DriverFactory.getDriver().url());
     }
 
     @And("^user open ejar project url$")
     public void openPageForProject() {
         setProjectExecution("ejar");
         navigateToUrl(PropManager.getInstance().getProperty("ejar.environment.url"));
-        waitForSeconds(1);
         clickOnActionIfExist("login.internal.temp.byxpath");
     }
 
@@ -99,7 +98,7 @@ public class GenericStepDefs extends GenericPage {
     @And("^change execution project to: (.*)$")
     public void setProjectExecution(String project){
         if(project.toLowerCase().contains("ejar"))
-        PropManager.getInstance().setTheExecutionProject("ejar web");
+            PropManager.getInstance().setTheExecutionProject("ejar web");
         else if(project.toLowerCase().trim().contains("yelo")) {
             PropManager.getInstance().setTheExecutionProject("yelo web");
         }else{
@@ -148,7 +147,7 @@ public class GenericStepDefs extends GenericPage {
         }
 
         if (bothElementsNotFound)
-        Assert.fail("non of the two elements were found, first element name was: " + firstElement + " ,second element name was: " + secondElement);
+            Assert.fail("non of the two elements were found, first element name was: " + firstElement + " ,second element name was: " + secondElement);
     }
 
     public void verifyAnyOfTwoElementToBePresent(String firstElement, String secondElement) {
@@ -205,7 +204,7 @@ public class GenericStepDefs extends GenericPage {
 //        clickOnActionInViewInRecordAtIndexMethod(actionName.trim().split(",")[0],actionName.trim().split(",")[1],recordIndex);
 //    }
 
-    @And("^filter view on column name: (.*) and enter value:(.*)$")
+    @And("^filter view on column name: (.*) and enter value: (.*)$")
     public void filterResultsInViewBasedOnColumnName(String columnName, String searchString) {
         String searchStringBasedOnLanguage=searchString.trim();
         if (searchString.contains(","))
@@ -288,7 +287,7 @@ public class GenericStepDefs extends GenericPage {
 
     @And("^wait for number of seconds: (.*)$")
     public void waitForSeconds(double waitTime) {
-      int waitTimeInt = (int) waitTime * 1000;
+        int waitTimeInt = (int) waitTime * 1000;
         try {
             Thread.sleep(waitTimeInt);
         } catch (InterruptedException e) {
@@ -679,7 +678,7 @@ public class GenericStepDefs extends GenericPage {
 
     @And("^user click on view action: (.*) related to record at index: (.*)$")
     public void clickOnActionInViewRelatedToColumn(String actionName,  String recordIndex) {
-             clickOnActionInViewRelatedToColumnMethod(actionName.trim().split(",")[0],actionName.trim().split(",")[1],recordIndex);
+        clickOnActionInViewRelatedToColumnMethod(actionName.trim().split(",")[0],actionName.trim().split(",")[1],recordIndex);
     }
 
 
@@ -700,11 +699,11 @@ public class GenericStepDefs extends GenericPage {
 
     @And("^change Yelo iframe with id: (.*) and click on element with id: (.*)$")
     public void changeYeloIframe(String iframe,String elementName) {
-     waitForElementPresentHere("yelo.gateway.iframe.byxpath",70);
-     changeIframe(iframe);
-     waitForElementPresentHere(elementName,20);
-     Element element = new Element(elementName);
-     waitForElementClickability(element);
+        waitForElementPresentHere("yelo.gateway.iframe.byxpath",70);
+        changeIframe(iframe);
+        waitForElementPresentHere(elementName,20);
+        Element element = new Element(elementName);
+        waitForElementClickability(element);
         try {
             element.clickAndIgnoreDetach();
         } finally {
@@ -781,12 +780,38 @@ public class GenericStepDefs extends GenericPage {
     }
 
     public int getColumnIndex(String headerText) {
-    String index;
-    Element tableHeader = new Element("ejar.tableheader.byxpath",String.format("//th[not(ancestor::vehiclehistory) and .//span[normalize-space(text())='%s']]",headerText));
+        String index;
+        Element tableHeader = new Element("ejar.tableheader.byxpath",String.format("//th[not(ancestor::vehiclehistory) and .//span[normalize-space(text())='%s']]",headerText));
 
-    index = tableHeader.getWebElement().getAttribute("aria-colindex");
+        index = tableHeader.getWebElement().getAttribute("aria-colindex");
 
-    return Integer.parseInt(index);
+        return Integer.parseInt(index);
 
+    }
+
+
+    @And("handle dialog with: (true|false) with prompt text: (.*)$")
+    public void handleDialog(boolean accept, String promptText) {
+        Page page = DriverFactory.getDriver();
+        page.onceDialog(dialog -> {
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println(dialog.type() + ": " + dialog.message());
+            if (accept) {
+                dialog.accept(promptText);
+            } else {
+                dialog.dismiss();
+            }
+        });
+    }
+
+    @And("create web dialog type: (alert|confirm|prompt) with message: (.*)$")
+    public void createDialog(String type, String message) {
+        Page page = DriverFactory.getDriver();
+        Object result = page.evaluate("([t, m]) => window[t](m)", Arrays.asList(type, message));
+        System.out.println("Dialog returned: " + result);
     }
 }

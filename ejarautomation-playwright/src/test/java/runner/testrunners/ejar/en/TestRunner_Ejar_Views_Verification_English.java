@@ -4,33 +4,33 @@ import automation.framework.business.RegxHelper;
 import automation.framework.listener.RunnerListener;
 import automation.framework.propmanager.PropManager;
 import com.aventstack.extentreports.cucumber.adapter.ExtentCucumberAdapter;
-import io.cucumber.junit.Cucumber;
-import io.cucumber.junit.CucumberOptions;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import io.cucumber.testng.AbstractTestNGCucumberTests;
+import io.cucumber.testng.CucumberOptions;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 
 import java.io.IOException;
 
 /**
  * this is the cucumber running initiator, which generate reports for each feature
  *
- * @author e.mubarak@iyelo.com
+ * @author e.muabarak@iyelo.com
  */
-@RunWith(Cucumber.class)
 @CucumberOptions(plugin = {
         "com.aventstack.extentreports.cucumber.adapter.ExtentCucumberAdapter:",
 },
         features = {"src/test/resources/feature/ejar/web/views/verification/"},
         monochrome = true,
         glue = {"stepdefs"})
-public class TestRunner_Ejar_Views_Verification_English {
+public class TestRunner_Ejar_Views_Verification_English extends AbstractTestNGCucumberTests {
 
     @BeforeClass
     public static void testRunnerBeforeClass() throws IOException {
+        System.setProperty("dataproviderthreadcount", "10");
         PropManager.getInstance().setExecutionLanguageProperty("en");
         PropManager.getInstance().setTheExecutionProject("ejar web");
-        Class currentClass = new Object() {
+        Class<?> currentClass = new Object() {
         }.getClass().getEnclosingClass();
         System.out.println("test runner feature name is in before class : " + currentClass.getName());
         RunnerListener.testRunStarted(new RegxHelper().getRegxMatch("\\.(?!.+\\.)(.+)", 1, currentClass.getName()));
@@ -42,5 +42,11 @@ public class TestRunner_Ejar_Views_Verification_English {
         }.getClass().getEnclosingClass().getName());
         RunnerListener.testRunFinished(ExtentCucumberAdapter.getCurrentStep(), new RegxHelper().getRegxMatch("\\.(?!.+\\.)(.+)", 1, new Object() {
         }.getClass().getEnclosingClass().getName()));
+    }
+
+    @Override
+    @DataProvider(parallel = true)
+    public Object[][] scenarios() {
+        return super.scenarios();
     }
 }
