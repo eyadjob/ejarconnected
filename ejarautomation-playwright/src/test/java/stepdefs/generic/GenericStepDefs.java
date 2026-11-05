@@ -846,13 +846,14 @@ public class GenericStepDefs extends GenericPage {
     /** Attaches listeners, reloads the page so its load errors are captured, returns the errors. */
     private List<String> collectConsoleErrors() {
         Page page = DriverFactory.getDriver();
-        List<String> errors = Collections.synchronizedList(new ArrayList<>());
-
-        page.onConsoleMessage((ConsoleMessage msg) -> {
-            if ("error".equals(msg.type())) {
-                errors.add(msg.text());
+        List<String> errors = new ArrayList<>();
+        List<ConsoleMessage> msg =  page.consoleMessages();
+        for (ConsoleMessage singleMsg: msg) {
+            if ( "error".equals(singleMsg.type())) {
+                errors.add(singleMsg.text());
             }
-        });
+        }
+
         page.onPageError(error -> errors.add("Uncaught exception: " + error));
 
         page.reload();
