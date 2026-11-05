@@ -98,7 +98,7 @@ public class YeloGenericStepDefs {
     }
 
     @Given("^user open website page: (.*)")
-    public void openWebsitePage(String websiteName) {
+    public void openWebsitePage(String websiteName) throws InterruptedException {
         genericStepDefs.setProjectExecution("yelo");
         String projectUrl;
         EnvironmentNames environmentName =  EnvironmentNames.fromString(websiteName);
@@ -115,7 +115,7 @@ public class YeloGenericStepDefs {
         ScenarioContextSingleton.getInstance().setContextValue("websiteBaseUrl", projectUrl);
         genericStepDefs.navigateToUrl(projectUrl);
         waitForLoadingIconToBeNotPresentStatic("yelo web");
-        genericPage.clickOnActionIfExist("yelo.cookies.dialog.ok.action.byxpath");
+        GenericPage.dismissCookieBanner("cookieconsent_status","dismiss");
     }
 
     public void clickOnMinimizeChatWindow() {
