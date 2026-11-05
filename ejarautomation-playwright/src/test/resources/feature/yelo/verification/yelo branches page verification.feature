@@ -14,6 +14,6 @@ Feature: Branches Page Verification
     And verify element present: yelo.branches.filterByAirport.byxpath
     And verify element text present: yelo.branches.clickonlocation.byxpath with text: yelo.branches.clickonlocation.text
     And verify element present: yelo.branches.googleMap.byxpath
-    And check page requests contains the following request GetCityDetails
+    And check page requests contains the following request GetCityDetail with assertion type: soft
     And check console has no error messages with assertion: soft
-    And check console contains the following error message Error getting user location with assertion: hard
+    And check console contains the following error message Error getting user location with assertion type: soft

@@ -34,7 +34,7 @@ public class GenericStepDefs extends GenericPage {
 
     @Given("^ejar login and open url with user name: (.*) and password: (.*) url: (.*)$")
     public void LoginWithUsernameAndPassword(String username, String password, String url) {
-        PropManager.getInstance().getPropertiesValues().get("appProperties.properties").put("execution.project.name","ejar web");
+        PropManager.getInstance().getPropertiesValues().get("appProperties.properties").put("execution.project.name", "ejar web");
         if (PropManager.getInstance().getProperty("execution.lang").equals("ar")) {
 
             try {
@@ -61,7 +61,7 @@ public class GenericStepDefs extends GenericPage {
 
     @Given("^ejar open url and login with tenant: (.*) and user name: (.*) and password: (.*) url: (.*)$")
     public void LoginWithTenantNameUsernameAndPassword(String tenantName, String username, String password, String url) {
-        PropManager.getInstance().getPropertiesValues().get("appProperties.properties").put("execution.project.name","ejar web");
+        PropManager.getInstance().getPropertiesValues().get("appProperties.properties").put("execution.project.name", "ejar web");
 //        waitForSeconds(1);
 //        clickElement("ejar.loginpage.changetenantlink.byxpath");
 //        clickElement("ejar.loginpage.switchtotenant.checkbox.byxpath");
@@ -79,7 +79,7 @@ public class GenericStepDefs extends GenericPage {
     public void openPage(String url) {
         navigateToUrl(url);
         System.out.println("Storing Yelo Base URL :" + DriverFactory.getDriver().url());
-        ScenarioContextSingleton.getInstance().setContextValue("websiteBaseUrl",DriverFactory.getDriver().url());
+        ScenarioContextSingleton.getInstance().setContextValue("websiteBaseUrl", DriverFactory.getDriver().url());
     }
 
     @And("^user open ejar project url$")
@@ -102,12 +102,12 @@ public class GenericStepDefs extends GenericPage {
     }
 
     @And("^change execution project to: (.*)$")
-    public void setProjectExecution(String project){
-        if(project.toLowerCase().contains("ejar"))
+    public void setProjectExecution(String project) {
+        if (project.toLowerCase().contains("ejar"))
             PropManager.getInstance().setTheExecutionProject("ejar web");
-        else if(project.toLowerCase().trim().contains("yelo")) {
+        else if (project.toLowerCase().trim().contains("yelo")) {
             PropManager.getInstance().setTheExecutionProject("yelo web");
-        }else{
+        } else {
             System.out.println("none met the if statement so defaulting to ejar web as execution project for this run");
             PropManager.getInstance().setTheExecutionProject("ejar web");
         }
@@ -138,18 +138,17 @@ public class GenericStepDefs extends GenericPage {
 
     @And("verify any of two elements to be present, first element : (.*) the second element: (.*)$")
     public void verifyAnyOfTheTwoElementToBePresent(String firstElement, String secondElement) {
-        boolean bothElementsNotFound=false, firstNotFound=false;
+        boolean bothElementsNotFound = false, firstNotFound = false;
         try {
             waitForElementToBeVisibleWithoutAssertion(firstElement, 3);
-        }
-        catch (Exception e) {
-            firstNotFound=true;
+        } catch (Exception e) {
+            firstNotFound = true;
         }
         try {
             waitForElementToBeVisibleWithoutAssertion(secondElement, 4);
-        }   catch (Exception e) {
+        } catch (Exception e) {
             if (firstNotFound)
-                bothElementsNotFound=true;
+                bothElementsNotFound = true;
         }
 
         if (bothElementsNotFound)
@@ -197,12 +196,11 @@ public class GenericStepDefs extends GenericPage {
 
     @And("^user click on view action: (.*) related to record with text: (.*) then select record at index: (.*)$")
     public void clickOnActionInViewRelatedToColumn(String actionName, String recordString, String recordIndex) {
-        String searchStringBasedOnLanguage=recordString.trim();
+        String searchStringBasedOnLanguage = recordString.trim();
         if (recordString.contains(","))
             searchStringBasedOnLanguage = getOptionBasedOnLang(recordString.trim());
-        clickOnActionInViewRelatedToColumnMethod(actionName.trim().split(",")[0],actionName.trim().split(",")[1],searchStringBasedOnLanguage,recordIndex);
+        clickOnActionInViewRelatedToColumnMethod(actionName.trim().split(",")[0], actionName.trim().split(",")[1], searchStringBasedOnLanguage, recordIndex);
     }
-
 
 
 //    @And("^user click on view action: (.*) then select record at index: (.*)$")
@@ -212,26 +210,26 @@ public class GenericStepDefs extends GenericPage {
 
     @And("^filter view on column name: (.*) and enter value: (.*)$")
     public void filterResultsInViewBasedOnColumnName(String columnName, String searchString) {
-        String searchStringBasedOnLanguage=searchString.trim();
+        String searchStringBasedOnLanguage = searchString.trim();
         if (searchString.contains(","))
             searchStringBasedOnLanguage = getOptionBasedOnLang(searchString.trim());
-        filterResultsInViewBasedOnColumnNameMethod(getOptionBasedOnLang(columnName),searchStringBasedOnLanguage);
+        filterResultsInViewBasedOnColumnNameMethod(getOptionBasedOnLang(columnName), searchStringBasedOnLanguage);
     }
 
     @And("^filter view on column name: (.*) and select dropdown list value: (.*)$")
-    public void filterResultInViewBySelectingValue(String columnName, String value){
-        String searchStringBasedOnLanguage=value.trim();
+    public void filterResultInViewBySelectingValue(String columnName, String value) {
+        String searchStringBasedOnLanguage = value.trim();
         if (value.contains(","))
             searchStringBasedOnLanguage = getOptionBasedOnLang(value.trim());
-        filterResultsInViewBasedOnColumnNameMethodBySelectDropDownOption("ejar.generic.view.column.filter.action.byxpath",getOptionBasedOnLang(columnName),searchStringBasedOnLanguage);
+        filterResultsInViewBasedOnColumnNameMethodBySelectDropDownOption("ejar.generic.view.column.filter.action.byxpath", getOptionBasedOnLang(columnName), searchStringBasedOnLanguage);
     }
 
     @And("^filter view based on state column name: (.*) and enter value:(.*)$")
     public void filterResultsInViewBasedOnColumnNameSelect(String columnName, String searchString) {
-        String searchStringBasedOnLanguage=searchString.trim();
+        String searchStringBasedOnLanguage = searchString.trim();
         if (searchString.contains(","))
             searchStringBasedOnLanguage = getOptionBasedOnLang(searchString.trim());
-        filterResultsInViewBasedOnColumnNameMethodWithSelect(getOptionBasedOnLang(columnName),searchStringBasedOnLanguage,"ejar.generic.view.column.filter.action.byxpath");
+        filterResultsInViewBasedOnColumnNameMethodWithSelect(getOptionBasedOnLang(columnName), searchStringBasedOnLanguage, "ejar.generic.view.column.filter.action.byxpath");
         waitForSeconds(1);
     }
 
@@ -244,13 +242,13 @@ public class GenericStepDefs extends GenericPage {
         element.clickElement();
         Element.waitForLoadingIconToBeNotPresentStatic();
         Element filterInputFiled = new Element("ejar.generic.view.column.filter.select.field.byxpath");
-        if(!filterInputFiled.isElementPresentAfterWait(1))
+        if (!filterInputFiled.isElementPresentAfterWait(1))
             element.clickElement();
         filterInputFiled.clickElement();
         filterInputFiled.sendKeysInElement(searchText);
-        String optionTextXpath="//kendo-popup//li[contains(.,'"+ searchText +"')]";
+        String optionTextXpath = "//kendo-popup//li[contains(.,'" + searchText + "')]";
         this.waitForSeconds(1);
-        Element filterOptionElement = new Element("filterOptionElement.byxpath",optionTextXpath);
+        Element filterOptionElement = new Element("filterOptionElement.byxpath", optionTextXpath);
         filterOptionElement.clickElement();
         Element filterSubmitAction = new Element("ejar.generic.view.column.submitFilter.action.field.byxpath");
         filterSubmitAction.clickElement();
@@ -263,17 +261,14 @@ public class GenericStepDefs extends GenericPage {
     }
 
     @And("^click on view first record cell under both column name: (.*) and form name: (.*)$")
-    public void clickOnFirstViewRecordCellUnderColumnName(String columnName,String formName) {
-        clickOnFirstViewRecordCellUnderColumnNameAndFormNameMethod(formName,returnStringBasedOnLanguage(columnName.trim()));
+    public void clickOnFirstViewRecordCellUnderColumnName(String columnName, String formName) {
+        clickOnFirstViewRecordCellUnderColumnNameAndFormNameMethod(formName, returnStringBasedOnLanguage(columnName.trim()));
     }
 
     @And("^click on view record that contains text: (.*)$")
     public void clickOnViewRecordThatContainText(String recordString) {
         clickOnRecordCellContainsText(returnStringBasedOnLanguage(recordString.trim()));
     }
-
-
-
 
 
     @And("^user click on action if enabled with id: (.*)$")
@@ -322,14 +317,10 @@ public class GenericStepDefs extends GenericPage {
     }
 
 
-
-
     @And("^clear element: (.*) by back space: (.*)$")
     public void clearField(String element, int clickCount) {
         new Element(element).clickOnKey("Backspace", clickCount);
     }
-
-
 
 
     @And("^user enter value : (.*) in field : (.*)$")
@@ -340,7 +331,7 @@ public class GenericStepDefs extends GenericPage {
             e.printStackTrace();
         }
         clearField(field);
-        simulateClickingOnKeyMethod(field,value);
+        simulateClickingOnKeyMethod(field, value);
     }
 
     @And("^set random text into element: (.*) and store name: (.*)$")
@@ -359,11 +350,10 @@ public class GenericStepDefs extends GenericPage {
 
     @And("^set random text into element: (.*) with size: (.*) and initial string: (.*)$")
     public String setRandomStringInElement(String elementName, String stringSize, String initialString) {
-        String randomString = initialString +" "+ StringHelper.getRandomStringOfSize(Integer.parseInt(stringSize));
+        String randomString = initialString + " " + StringHelper.getRandomStringOfSize(Integer.parseInt(stringSize));
         setValueIntoElement(randomString, elementName);
         return randomString;
     }
-
 
 
     @And("^set random email into element: (.*)$")
@@ -389,7 +379,6 @@ public class GenericStepDefs extends GenericPage {
     }
 
 
-
     @And("^user enter value of property: (.*) in field : (.*)$")
     public void setPropertyValue(String propertyName, String field) {
         Element.waitForLoadingIconToBeNotPresentStatic();
@@ -400,7 +389,7 @@ public class GenericStepDefs extends GenericPage {
         }
         String value = PropManager.getInstance().getProperty(propertyName);
         Element.waitForLoadingIconToBeNotPresentStatic();
-        simulateClickingOnKeyMethod(field,value);
+        simulateClickingOnKeyMethod(field, value);
     }
 
     @And("^verify page that contains url is displayed: (.*)$")
@@ -413,7 +402,7 @@ public class GenericStepDefs extends GenericPage {
     @And("^verify page url doesn't contain :(.*)$")
     public void verifyPageUrlNotContain(String elementsString) {
         List<String> urlText = Arrays.asList(elementsString.split(","));
-        urlText.forEach(this :: verifyPageIsNotOpenedByUrl);
+        urlText.forEach(this::verifyPageIsNotOpenedByUrl);
     }
 
     @And("^user click on submit for action with id :(.*)$")
@@ -435,6 +424,7 @@ public class GenericStepDefs extends GenericPage {
     public void scrollToElementMethod(String elementName) {
         scrollToElement(elementName);
     }
+
     @And("^user click on element using java script executor: (.*)$")
     public void clickOnElementUsingJavaScriptExecutor(String elementName) {
         clickOnElementUsingJavaScriptExecutorMethod(elementName);
@@ -449,10 +439,11 @@ public class GenericStepDefs extends GenericPage {
     public void clickOnLink(String element) {
         clickElement(element);
     }
+
     @Then("^click on the element: (.*) if element: (.*) is not present with wait: (.*)$")
-    public void clickOnElementIfElementNotPresent(String clickElement,String elementNotPresent,String wait) {
+    public void clickOnElementIfElementNotPresent(String clickElement, String elementNotPresent, String wait) {
         Element notPresentElement = new Element(elementNotPresent);
-        if(!notPresentElement.isElementPresentAfterWait(Integer.parseInt(wait))) {
+        if (!notPresentElement.isElementPresentAfterWait(Integer.parseInt(wait))) {
             clickElement(clickElement);
         }
     }
@@ -528,7 +519,6 @@ public class GenericStepDefs extends GenericPage {
     }
 
 
-
     public String getOptionBasedOnLang(String optionsText) {
         if (PropManager.getInstance().getProperty("execution.lang").equals("en"))
             return optionsText.split(",")[0].trim();
@@ -571,17 +561,15 @@ public class GenericStepDefs extends GenericPage {
     }
 
     @Then("^click on action if exist with wait: (.*) waiting number of seconds: (.*)$")
-    public void clickOnActionIfExistStepDef(String elementName,String numberOfSeconds) {
-        clickOnActionIfExist(elementName,numberOfSeconds);
+    public void clickOnActionIfExistStepDef(String elementName, String numberOfSeconds) {
+        clickOnActionIfExist(elementName, numberOfSeconds);
     }
-
 
 
     @Then("^upload file to element: (.*) with path:(.*)$")
     public void uploadFileWithPathToElement(String elementName, String filePath) throws IOException, InterruptedException {
         uploadFileToElement(elementName.trim(), filePath.trim());
     }
-
 
 
     @Then("^verify element: (.*) attribute: (.*) contains value: (.*) is: (.*)$")
@@ -662,13 +650,13 @@ public class GenericStepDefs extends GenericPage {
 
     @Then("^send keys to element: (.*) keys: (.*)$")
     public void simulateClickingOnKeyMethod(String elementName, String keys) {
-        sendKeysToElement(elementName,keys);
+        sendKeysToElement(elementName, keys);
     }
 
 
     @Then("^send keys to element: (.*) keys: (.*) with milli second delay: (.*)$")
-    public void simulateClickingOnKeyWithMilliSecondDelayMethod(String elementName, String keys,String delay) {
-        sendKeysToElement(elementName,keys,Integer.parseInt(delay));
+    public void simulateClickingOnKeyWithMilliSecondDelayMethod(String elementName, String keys, String delay) {
+        sendKeysToElement(elementName, keys, Integer.parseInt(delay));
     }
 
 
@@ -683,8 +671,8 @@ public class GenericStepDefs extends GenericPage {
     }
 
     @And("^user click on view action: (.*) related to record at index: (.*)$")
-    public void clickOnActionInViewRelatedToColumn(String actionName,  String recordIndex) {
-        clickOnActionInViewRelatedToColumnMethod(actionName.trim().split(",")[0],actionName.trim().split(",")[1],recordIndex);
+    public void clickOnActionInViewRelatedToColumn(String actionName, String recordIndex) {
+        clickOnActionInViewRelatedToColumnMethod(actionName.trim().split(",")[0], actionName.trim().split(",")[1], recordIndex);
     }
 
 
@@ -704,10 +692,10 @@ public class GenericStepDefs extends GenericPage {
 //    }
 
     @And("^change Yelo iframe with id: (.*) and click on element with id: (.*)$")
-    public void changeYeloIframe(String iframe,String elementName) {
-        waitForElementPresentHere("yelo.gateway.iframe.byxpath",70);
+    public void changeYeloIframe(String iframe, String elementName) {
+        waitForElementPresentHere("yelo.gateway.iframe.byxpath", 70);
         changeIframe(iframe);
-        waitForElementPresentHere(elementName,20);
+        waitForElementPresentHere(elementName, 20);
         Element element = new Element(elementName);
         waitForElementClickability(element);
         try {
@@ -730,21 +718,21 @@ public class GenericStepDefs extends GenericPage {
         DriverFactory.setCurrentFrame(null);
     }
 
-    @And ("wait for element present with xpath: (.*) and replace variable value: (.*) for period in seconds: (.*)$")
-    public void waitForElementPresentWithVariable(String xpath,String value,int seconds){
+    @And("wait for element present with xpath: (.*) and replace variable value: (.*) for period in seconds: (.*)$")
+    public void waitForElementPresentWithVariable(String xpath, String value, int seconds) {
         Element.waitForLoadingIconToBeNotPresentStatic();
-        String newXpath=xpath.replace("${valueToReplace}",value);
+        String newXpath = xpath.replace("${valueToReplace}", value);
         Element element = new Element("elementToWaitTobeVisibleWithReplaceValue.byxpath", newXpath);
         waitForElementToBeVisible(element, seconds);
     }
 
-    @And ("verify array of elements:(.*) contains value:(.*)$")
-    public void verifyArrayOfElementContains(String xpath,String value){
+    @And("verify array of elements:(.*) contains value:(.*)$")
+    public void verifyArrayOfElementContains(String xpath, String value) {
         waitForLoadingIconToBeNotPresentStatic("yelo web");
         Element element = new Element(xpath.strip());
-        for(Locator webElement :  element.getWebElements(5)) {
+        for (Locator webElement : element.getWebElements(5)) {
             String elementText = webElement.textContent();
-            Assert.assertTrue("Element text expected to contain:" + value + " ,but it text was: "+ elementText,elementText.contains(value));
+            Assert.assertTrue("Element text expected to contain:" + value + " ,but it text was: " + elementText, elementText.contains(value));
         }
     }
 
@@ -760,8 +748,9 @@ public class GenericStepDefs extends GenericPage {
             }
         }
     }
+
     public void ensureCheckboxIsCheckedWithXpath(String xpath) {
-        Element checkbox = new Element("checkboxchecked.byxpath",xpath);
+        Element checkbox = new Element("checkboxchecked.byxpath", xpath);
         Locator locator = checkbox.getWebElement();
         try {
             locator.check(new Locator.CheckOptions().setForce(true));
@@ -771,15 +760,15 @@ public class GenericStepDefs extends GenericPage {
             }
         }
     }
+
     @And("^ensure checkbox is unchecked with id: (.*)$")
     public void ensureCheckboxIsUnchecked(String elementName) {
         Element checkbox = new Element(elementName);
         Locator locator = checkbox.getWebElement();
         try {
             locator.uncheck(new Locator.UncheckOptions().setForce(true));
-        }
-        catch(PlaywrightException e){
-            if(locator.isChecked()){
+        } catch (PlaywrightException e) {
+            if (locator.isChecked()) {
                 locator.click(new Locator.ClickOptions().setForce(true));
             }
         }
@@ -787,7 +776,7 @@ public class GenericStepDefs extends GenericPage {
 
     public int getColumnIndex(String headerText) {
         String index;
-        Element tableHeader = new Element("ejar.tableheader.byxpath",String.format("//th[not(ancestor::vehiclehistory) and .//span[normalize-space(text())='%s']]",headerText));
+        Element tableHeader = new Element("ejar.tableheader.byxpath", String.format("//th[not(ancestor::vehiclehistory) and .//span[normalize-space(text())='%s']]", headerText));
 
         index = tableHeader.getWebElement().getAttribute("aria-colindex");
 
@@ -820,13 +809,17 @@ public class GenericStepDefs extends GenericPage {
         Object result = page.evaluate("([t, m]) => window[t](m)", Arrays.asList(type, message));
         System.out.println("Dialog returned: " + result);
     }
-    @And("^check console contains the following error message (.*) with assertion: (hard|soft)$")
+
+    @And("^check console contains the following error message (.*) with assertion type: (hard|soft)$")
     public void checkConsoleContainsErrorMessage(String expectedMessage, String assertionType) {
         List<String> errors = collectConsoleErrors();
 
-        List<String> matching = errors.stream()
-                .filter(e -> e.contains(expectedMessage))
-                .toList();
+        List<String> matching = new ArrayList<>();
+        for (String e : errors) {
+            if (e.contains(expectedMessage)) {
+                matching.add(e);
+            }
+        }
 
         if (!matching.isEmpty()) {
             reportFailure(assertionType, "Console contains " + matching.size()
@@ -843,20 +836,20 @@ public class GenericStepDefs extends GenericPage {
         }
     }
 
-    /** Attaches listeners, reloads the page so its load errors are captured, returns the errors. */
+    /**
+     * Attaches listeners, reloads the page so its load errors are captured, returns the errors.
+     */
     private List<String> collectConsoleErrors() {
         Page page = DriverFactory.getDriver();
-        List<String> errors = Collections.synchronizedList(new ArrayList<>());
-
-        page.onConsoleMessage((ConsoleMessage msg) -> {
-            if ("error".equals(msg.type())) {
-                errors.add(msg.text());
+        List<String> errors = new ArrayList<>();
+        List<ConsoleMessage> msg = page.consoleMessages();
+        for (ConsoleMessage singleMsg : msg) {
+            if ("error".equals(singleMsg.type())) {
+                errors.add(singleMsg.text());
             }
-        });
-        page.onPageError(error -> errors.add("Uncaught exception: " + error));
+        }
 
-        page.reload();
-        page.waitForLoadState(LoadState.NETWORKIDLE);
+        page.onPageError(error -> errors.add("Uncaught exception: " + error));
         return new ArrayList<>(errors);
     }
 
@@ -868,20 +861,24 @@ public class GenericStepDefs extends GenericPage {
             ejarPages.assertActualExpected(message);
         }
     }
-    @And("^check page requests contains the following request (.*)$")
-    public void checkPageRequestsContains(String expectedUrlText) {
-        List<Request> requests = DriverFactory.getDriver().requests();
 
-        List<String> matching = requests.stream()
-                .filter(r -> r.url().contains(expectedUrlText))
-                .map(r -> r.method() + " " + r.url())
-                .toList();
+@And("^check page requests contains the following request (.*) with assertion type: (hard|soft)$")
+public void checkPageRequestsContains(String expectedUrlText, String assertionType) {
+    Page page = DriverFactory.getDriver();
+    List<Request> requests = page.requests();
 
-        if (matching.isEmpty()) {
-            Assert.fail("No page request contains the text: \"" + expectedUrlText
-                    + "\". Number of requests checked: " + requests.size());
+    List<String> matching = new ArrayList<>();
+    for (Request r : requests) {
+        if (r.url().contains(expectedUrlText)) {
+            matching.add(r.method() + " " + r.url());
         }
-        System.out.println("Found " + matching.size() + " request(s) containing \""
-                + expectedUrlText + "\": " + matching);
     }
+
+    if (matching.isEmpty()) {
+        reportFailure(assertionType, "No page request contains the text: \"" + expectedUrlText
+                + "\". Number of requests checked: " + requests.size());
+    }
+    System.out.println("Found " + matching.size() + " request(s) containing \""
+            + expectedUrlText + "\": " + matching);
+}
 }
