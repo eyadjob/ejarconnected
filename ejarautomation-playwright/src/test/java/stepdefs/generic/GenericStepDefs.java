@@ -14,7 +14,13 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import org.junit.Assert;
-
+import com.microsoft.playwright.ConsoleMessage;
+import com.microsoft.playwright.options.LoadState;
+import io.cucumber.java.After;
+import stepdefs.ejar.web.EjarPages;
+import com.microsoft.playwright.Request;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -24,7 +30,7 @@ import static automation.framework.Element.waitForLoadingIconToBeNotPresentStati
 public class GenericStepDefs extends GenericPage {
 
     ThreadLocal<String> formName = new ThreadLocal<>();
-
+    EjarPages ejarPages = new EjarPages();
 
     @Given("^ejar login and open url with user name: (.*) and password: (.*) url: (.*)$")
     public void LoginWithUsernameAndPassword(String username, String password, String url) {
@@ -813,5 +819,69 @@ public class GenericStepDefs extends GenericPage {
         Page page = DriverFactory.getDriver();
         Object result = page.evaluate("([t, m]) => window[t](m)", Arrays.asList(type, message));
         System.out.println("Dialog returned: " + result);
+    }
+    @And("^check console contains the following error message (.*) with assertion: (hard|soft)$")
+    public void checkConsoleContainsErrorMessage(String expectedMessage, String assertionType) {
+        List<String> errors = collectConsoleErrors();
+
+        List<String> matching = errors.stream()
+                .filter(e -> e.contains(expectedMessage))
+                .toList();
+
+        if (!matching.isEmpty()) {
+            reportFailure(assertionType, "Console contains " + matching.size()
+                    + " error(s) with text: \"" + expectedMessage + "\". Matching errors: " + matching);
+        }
+    }
+
+    @And("^check console has no error messages with assertion: (hard|soft)$")
+    public void checkConsoleHasNoErrorMessages(String assertionType) {
+        List<String> errors = collectConsoleErrors();
+        if (!errors.isEmpty()) {
+            reportFailure(assertionType, "Console has " + errors.size()
+                    + " error message(s): " + errors);
+        }
+    }
+
+    /** Attaches listeners, reloads the page so its load errors are captured, returns the errors. */
+    private List<String> collectConsoleErrors() {
+        Page page = DriverFactory.getDriver();
+        List<String> errors = Collections.synchronizedList(new ArrayList<>());
+
+        page.onConsoleMessage((ConsoleMessage msg) -> {
+            if ("error".equals(msg.type())) {
+                errors.add(msg.text());
+            }
+        });
+        page.onPageError(error -> errors.add("Uncaught exception: " + error));
+
+        page.reload();
+        page.waitForLoadState(LoadState.NETWORKIDLE);
+        return new ArrayList<>(errors);
+    }
+
+    private void reportFailure(String assertionType, String message) {
+        if (assertionType.equals("hard")) {
+            Assert.fail(message);
+        } else {
+            System.out.println("SOFT FAIL -> " + message);
+            ejarPages.assertActualExpected(message);
+        }
+    }
+    @And("^check page requests contains the following request (.*)$")
+    public void checkPageRequestsContains(String expectedUrlText) {
+        List<Request> requests = DriverFactory.getDriver().requests();
+
+        List<String> matching = requests.stream()
+                .filter(r -> r.url().contains(expectedUrlText))
+                .map(r -> r.method() + " " + r.url())
+                .toList();
+
+        if (matching.isEmpty()) {
+            Assert.fail("No page request contains the text: \"" + expectedUrlText
+                    + "\". Number of requests checked: " + requests.size());
+        }
+        System.out.println("Found " + matching.size() + " request(s) containing \""
+                + expectedUrlText + "\": " + matching);
     }
 }
