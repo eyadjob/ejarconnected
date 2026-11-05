@@ -7,14 +7,17 @@ import automation.framework.business.ElementStatus;
 import automation.framework.listener.DateHelper;
 import automation.framework.propmanager.PropManager;
 import automation.framework.threadData.DriverFactory;
+import com.google.api.services.drive.Drive;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
+import com.microsoft.playwright.options.Cookie;
 import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.WaitUntilState;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.junit.Assert;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
@@ -219,7 +222,7 @@ public class GenericPage {
         Element.waitForLoadingIconToBeNotPresentStatic();
         Element element = new Element("Dynamic.tableHeaders.byxpath", "//gridpagelayout//table//thead//th");
         List<Locator> webElements = element.getWebElements();
-       gridHeadersLoop: for (int i = 0; i < webElements.size(); i++) {
+        gridHeadersLoop: for (int i = 0; i < webElements.size(); i++) {
             try {
                 if (webElements.get(i).innerText().equals(columnName)) {
                     Element cellToClickElement = new Element("Dynamic.cellToClick.byxpath", "(//kendo-grid-list//td//a)[" + (i + 1) + "]");
@@ -974,17 +977,17 @@ public class GenericPage {
         String currentYear = currentMonthYearString.split("/")[2];
         String currentMonth = currentMonthYearString.split("/")[1];
         Element currentMonthYear = new Element("yelo.currentMonthYear.span.byxpath","(//div[@class='datepicker-days']//th[@class='datepicker-switch'])[1]");
-            currentMonthYear.clickElement();
-            newMonth = new Element("yelo.newMonth.span.byxpath", "//div[contains(@class,'months')  and not(@style='display: none;')]//span[normalize-space()='" + month + "']");
-            clickOnActionIfExist("yelo.homepage.pickupMonth.th.byxpath");
-            newMonth.clickElement();
-             newDay= new Element("yelo.newDay.td.byxpath", "( //div[@id='range-date-piker']//td[not(contains(@class,'disable')) and normalize-space()='" + day + "'] )[1]");
-             newDay.clickElement();
+        currentMonthYear.clickElement();
+        newMonth = new Element("yelo.newMonth.span.byxpath", "//div[contains(@class,'months')  and not(@style='display: none;')]//span[normalize-space()='" + month + "']");
+        clickOnActionIfExist("yelo.homepage.pickupMonth.th.byxpath");
+        newMonth.clickElement();
+        newDay= new Element("yelo.newDay.td.byxpath", "( //div[@id='range-date-piker']//td[not(contains(@class,'disable')) and normalize-space()='" + day + "'] )[1]");
+        newDay.clickElement();
 
     }
 
     public void setTimeInCalendarFieldForYeloV2(String elementName, String time,Boolean isReturn) {
-    Element newTime;
+        Element newTime;
         if(!isReturn) {
             clickOnActionIfExist("yelo.homepage.backReturnCalendar.button.byxpath");
             newTime = new Element(elementName, "//div[@id='pickup-time-piker']//li[not (contains(@class,'disable')) and normalize-space()='" + time + "']");
@@ -1247,5 +1250,15 @@ public class GenericPage {
         element.sendKeysInElement(keys, pressOptions);
     }
 
+    public static void dismissCookieBanner(String cookieName,String cookieValue) {
+        Page p = DriverFactory.getDriver();
+        //Takes the page’s current URL, for example https://www.your-site.com/en/login, and extracts just the host: www.your-site.com. This is the domain the cookie will belong to, so you don’t have to hardcode it.
+        String host = URI.create(p.url()).getHost();
+        DriverFactory.getBrowserContext().addCookies(java.util.List.of(
+                new Cookie(cookieName, cookieValue)
+                        .setDomain(host)
+                        .setPath("/")
+        ));
+    }
 
 }
