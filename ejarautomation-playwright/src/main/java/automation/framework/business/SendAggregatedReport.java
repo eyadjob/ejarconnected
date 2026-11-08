@@ -554,7 +554,7 @@ public class SendAggregatedReport {
                 "    <style>\n" +
                 "        body { margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }\n" +
                 "        .wrapper { width: 100%; max-width: 900px; margin: 0 auto; background-color: #ffffff; }\n" +
-                "        .header-section { background-color: #4D0970; padding: 32px 40px; text-align: center; }\n" +
+                "        .header-section { background-color: #4D0970; padding: 18px 40px; text-align: center; }\n" +
                 "        .summary-section { padding: 32px 40px; background-color: #ffffff; }\n" +
                 "        .scenarios-section { padding: 0 40px 32px 40px; background-color: #ffffff; }\n" +
                 "        .elapsed { font-size: 14px; color: #666666; font-weight: 500; font-family: 'Courier New', monospace; text-align: center; }\n" +
@@ -569,7 +569,7 @@ public class SendAggregatedReport {
 
                 "        @media only screen and (max-width: 600px) {\n" +
                 "            .summary-section, .scenarios-section { padding: 24px 20px !important; }\n" +
-                "            .header-section { padding: 28px 20px !important; }\n" +
+                "            .header-section { padding: 18px 20px !important; }\n" +
                 "            .footer-section { padding: 24px 20px !important; }\n" +
                 "        }\n" +
                 "    </style>\n" +
@@ -582,9 +582,9 @@ public class SendAggregatedReport {
                 "                <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"900\" style=\"max-width: 900px; background-color: #ffffff;\" class=\"wrapper\">\n" +
                 "                    <!-- Header Section: logo and report title share one cell -->\n" +
                 "                    <tr>\n" +
-                "                        <td class=\"header-section\" style=\"background-color: #4D0970; padding: 32px 40px; text-align: center;\">\n" +
-                "                            <img src=\"cid:high-logo\" alt=\"Yelo\" width=\"196\" style=\"display: inline-block; max-width: 196px; width: 100%; height: auto; margin: 0 0 16px 0; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;\">\n" +
-                "                            <h1 style=\"color: #ffffff; font-size: 28px; font-weight: 600; margin: 0; letter-spacing: 0.5px;\">Automation Test Report</h1>\n" +
+                "                        <td class=\"header-section\" style=\"background-color: #4D0970; padding: 18px 40px; text-align: center;\">\n" +
+                "                            <img src=\"cid:high-logo\" alt=\"Yelo\" width=\"196\" style=\"display: block; margin: 0 auto 8px auto; max-width: 196px; width: 100%; height: auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;\">\n" +
+                "                            <h1 style=\"color: #ffffff; font-size: 28px; font-weight: 600; line-height: 1.2; margin: 0; letter-spacing: 0.5px;\">Automation Test Report</h1>\n" +
                 "                        </td>\n" +
                 "                    </tr>\n" +
                 "                    <!-- Execution Summary -->\n" +
