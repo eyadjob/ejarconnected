@@ -565,12 +565,12 @@ public class SendAggregatedReport {
                 "        .step-keyword { font-weight: 600; color: #555555; }\n" +
                 "        .step-text { color: #444444; }\n" +
                 "        .step-status { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 10px; }\n" +
-                "        .footer-section { background-color: #4D0970; color: #ffffff; padding: 32px 40px; }\n" +
+                "        .footer-section { background-color: #4D0970; color: #ffffff; padding: 22px 40px; }\n" +
 
                 "        @media only screen and (max-width: 600px) {\n" +
                 "            .summary-section, .scenarios-section { padding: 24px 20px !important; }\n" +
                 "            .header-section { padding: 18px 20px !important; }\n" +
-                "            .footer-section { padding: 24px 20px !important; }\n" +
+                "            .footer-section { padding: 19px 20px !important; }\n" +
                 "        }\n" +
                 "    </style>\n" +
                 "<base target=\"_blank\">\n" +
@@ -786,21 +786,21 @@ public class SendAggregatedReport {
                 "                    </tr>\n" +
                 "                    <!-- Footer Section -->\n" +
                 "                    <tr>\n" +
-                "                        <td class=\"footer-section\" style=\"background-color: #4D0970; color: #ffffff; padding: 32px 40px;\">\n" +
+                "                        <td class=\"footer-section\" style=\"background-color: #4D0970; color: #ffffff; padding: 22px 40px;\">\n" +
                 "                            <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\">\n" +
                 "                                <tr>\n" +
-                "                                    <td style=\"font-size: 13px; line-height: 1.7; color: #c0c8d4;\" width=\"48%\" valign=\"top\">\n" +
-                "                                        &copy; " + Year.now().getValue() + " Yelo is an innovator for the mobility industry, specialized in developing solutions and services to manage fleet and Rent a Car business.\n" +
+                "                                    <td style=\"font-size: 13px; line-height: 1.5; color: #ffffff;\" width=\"48%\" valign=\"top\">\n" +
+                "                                        &copy; " + Year.now().getValue() + " <span style=\"color: #FACB03;\">Yelo</span> is an innovator for the mobility industry, specialized in developing solutions and services to manage fleet and Rent a Car business.\n" +
                 "                                    </td>\n" +
                 "                                    <td width=\"4%\" style=\"background-color: #4D0970;\"></td>\n" +
-                "                                    <td style=\"font-size: 13px; line-height: 1.7; color: #c0c8d4; text-align: right; direction: rtl;\" width=\"48%\" valign=\"top\">\n" +
-                "                                        &copy; " + Year.now().getValue() + " Yelo &#x647;&#x64A; &#x634;&#x631;&#x643;&#x629; &#x645;&#x628;&#x62A;&#x643;&#x631;&#x629; &#x641;&#x64A; &#x635;&#x646;&#x627;&#x639;&#x629; &#x627;&#x644;&#x62A;&#x646;&#x642;&#x644;&#x60C; &#x645;&#x62A;&#x62E;&#x635;&#x635;&#x629; &#x641;&#x64A; &#x62A;&#x637;&#x648;&#x64A;&#x631; &#x627;&#x644;&#x62D;&#x644;&#x648;&#x644; &#x648;&#x627;&#x644;&#x62E;&#x62F;&#x645;&#x627;&#x62A; &#x644;&#x625;&#x62F;&#x627;&#x631;&#x629; &#x627;&#x644;&#x623;&#x633;&#x637;&#x648;&#x644; &#x648;&#x623;&#x639;&#x645;&#x627;&#x644; &#x62A;&#x623;&#x62C;&#x64A;&#x631; &#x627;&#x644;&#x633;&#x64A;&#x627;&#x631;&#x627;&#x62A;.\n" +
+                "                                    <td style=\"font-size: 13px; line-height: 1.5; color: #ffffff; text-align: right; direction: rtl;\" width=\"48%\" valign=\"top\">\n" +
+                "                                        &copy; " + Year.now().getValue() + " <span style=\"color: #FACB03;\">Yelo</span> &#x647;&#x64A; &#x634;&#x631;&#x643;&#x629; &#x645;&#x628;&#x62A;&#x643;&#x631;&#x629; &#x641;&#x64A; &#x635;&#x646;&#x627;&#x639;&#x629; &#x627;&#x644;&#x62A;&#x646;&#x642;&#x644;&#x60C; &#x645;&#x62A;&#x62E;&#x635;&#x635;&#x629; &#x641;&#x64A; &#x62A;&#x637;&#x648;&#x64A;&#x631; &#x627;&#x644;&#x62D;&#x644;&#x648;&#x644; &#x648;&#x627;&#x644;&#x62E;&#x62F;&#x645;&#x627;&#x62A; &#x644;&#x625;&#x62F;&#x627;&#x631;&#x629; &#x627;&#x644;&#x623;&#x633;&#x637;&#x648;&#x644; &#x648;&#x623;&#x639;&#x645;&#x627;&#x644; &#x62A;&#x623;&#x62C;&#x64A;&#x631; &#x627;&#x644;&#x633;&#x64A;&#x627;&#x631;&#x627;&#x62A;.\n" +
                 "                                    </td>\n" +
                 "                                </tr>\n" +
                 "                            </table>\n" +
                 "                            <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\">\n" +
                 "                                <tr>\n" +
-                "                                    <td style=\"text-align: center; font-size: 12px; color: #a0aab8; padding-top: 16px; border-top: 1px solid #671980;\">\n" +
+                "                                    <td style=\"text-align: center; font-size: 12px; color: #ffffff; padding-top: 10px; border-top: 1px solid #671980;\">\n" +
                 "                                        &#9993; info@iyelo.com &nbsp;&nbsp;|&nbsp;&nbsp; &#9742; +966 11 2848 244 &nbsp;&nbsp;|&nbsp;&nbsp; &#128205; Saudi Arabia, Riyadh, Al Yasmeen, Al Ulaya.\n" +
                 "                                    </td>\n" +
                 "                                </tr>\n" +
