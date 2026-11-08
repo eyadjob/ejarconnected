@@ -40,6 +40,17 @@ public class SendAggregatedReport {
     private Map<String, String> environmentVariables;
     private final boolean isProductionRun;
 
+    /**
+     * Runner opt-in: name of a properties file whose {@code report.email.header} /
+     * {@code report.email.footer} form the email shell. A runner sets it in {@code @BeforeClass}, e.g.
+     * {@code System.setProperty(SendAggregatedReport.EMAIL_LAYOUT_FILE_PROPERTY, "emailProperites_yelo_layout.properties")}.
+     * When unset, every run keeps its previous hard-coded design.
+     */
+    public static final String EMAIL_LAYOUT_FILE_PROPERTY = "report.email.layout.file";
+
+    /** Canonical file for the default email shell, used when no runner selected a layout file. */
+    private static final String DEFAULT_EMAIL_PROPERTIES_FILE = "emailProperites.properties";
+
     public SendAggregatedReport(String executionName) {
         this(executionName, (String) null);
     }
@@ -76,7 +87,39 @@ public class SendAggregatedReport {
 
 
     public String getResultEmailHeader() {
-        return PropManager.getInstance().getProperty("report.email.header");
+        return emailProperty("report.email.header");
+    }
+
+    /** Name of the layout file selected by the running test runner, or {@code ""} for the default design. */
+    private static String selectedLayoutFile() {
+        String file = System.getProperty(EMAIL_LAYOUT_FILE_PROPERTY);
+        return file == null ? "" : file.trim();
+    }
+
+    /** True when the running test runner asked for a properties-driven email shell. */
+    public boolean hasCustomEmailLayout() {
+        return !selectedLayoutFile().isEmpty();
+    }
+
+    /**
+     * Layout-aware lookup: the runner-selected layout file wins, everything else falls back to
+     * {@link PropManager#getProperty(String)} (which scans all files and may pick either copy of a
+     * duplicated key).
+     */
+    private String emailProperty(String key) {
+        String layoutFile = selectedLayoutFile();
+        if (!layoutFile.isEmpty()) {
+            String value = PropManager.getInstance().getPropertyFromFile(layoutFile, key);
+            if (value != null && !value.isEmpty()) {
+                return value;
+            }
+            log.warn("Layout file '{}' has no '{}'; falling back to the default properties.", layoutFile, key);
+        }
+        // Pin the default to its canonical file: the global lookup would otherwise pick whichever
+        // of emailProperites.properties / emailProperites_yelo_layout.properties happens to win the
+        // map ordering, so editing the layout file could silently change every other runner's email.
+        String value = PropManager.getInstance().getPropertyFromFile(DEFAULT_EMAIL_PROPERTIES_FILE, key);
+        return (value != null && !value.isEmpty()) ? value : PropManager.getInstance().getProperty(key);
     }
 
     public String addResultRecord(ReportDataHandler reportDataHandler, String testString) {
@@ -173,7 +216,7 @@ public class SendAggregatedReport {
             boolean isLastRow = (i == featureList.size() - 1);
             content.append(addResultRecord(reportDataHandler, "", isLastRow));
         }
-        content.append(PropManager.getInstance().getProperty("report.email.footer").replace("{{currentYear}}", String.valueOf(Year.now().getValue())));
+        content.append(emailProperty("report.email.footer").replace("{{currentYear}}", String.valueOf(Year.now().getValue())));
         String result = content.toString();
         result = result.replace("passedCount", String.valueOf(runResultsInformation.getScenarioPassCount()));
         result = result.replace("failedCount", String.valueOf(runResultsInformation.getScenarioFailCount()));
@@ -301,7 +344,9 @@ public class SendAggregatedReport {
         }
 
         String content;
-        if (isProductionRun) {
+        if (isProductionRun && hasCustomEmailLayout()) {
+            content = buildLayoutTestResultsContent(testResult, newReportName);
+        } else if (isProductionRun) {
             content = buildProductionTestResultsContent(testResult, newReportName);
         } else {
             content = buildTestResultsContent(testResult, newReportName);
@@ -519,6 +564,88 @@ public class SendAggregatedReport {
         result = result.replace("passedCount", String.valueOf(runResultsInformation.getScenarioPassCount()));
         result = result.replace("failedCount", String.valueOf(runResultsInformation.getScenarioFailCount()));
         return result;
+    }
+
+    /**
+     * Builds the email body from the layout file selected by the running test runner, keeping the
+     * production content (one row per scenario, plus that scenario's steps).
+     *
+     * <p>The layout file supplies the shell: its {@code report.email.header} ends inside an open
+     * {@code <tbody>} and its {@code report.email.footer} starts by closing it, so every fragment
+     * appended here is a bare {@code <tr>} matching its three columns
+     * (Feature Scenario | Elapsed | Status). Steps are nested in a {@code colspan="3"} cell.</p>
+     */
+    public String buildLayoutTestResultsContent(ExtentTest extentTestResult, String reportFileName) {
+        if (extentTestResult == null || extentTestResult.getExtent() == null) {
+            log.warn("buildLayoutTestResultsContent: ExtentTest or Extent is null; returning empty summary.");
+            return "";
+        }
+        RunResultsInformation runResultsInformation = generateRunResultsInformation(extentTestResult);
+        List<Test> featureList = extentTestResult.getExtent().getReport().getTestList();
+
+        StringBuilder content = new StringBuilder(emailProperty("report.email.header"));
+        Map<String, Queue<String>> oneDriveLinkMap = buildOneDriveLinkMap();
+        for (Test feature : featureList) {
+            for (Test scenario : feature.getChildren()) {
+                content.append(buildLayoutScenarioRow(scenario, oneDriveLinkMap));
+                content.append(buildLayoutStepsRow(scenario));
+            }
+        }
+        content.append(emailProperty("report.email.footer")
+                .replace("{{currentYear}}", String.valueOf(Year.now().getValue())));
+
+        String result = content.toString();
+        result = result.replace("passedCount", String.valueOf(runResultsInformation.getScenarioPassCount()));
+        result = result.replace("failedCount", String.valueOf(runResultsInformation.getScenarioFailCount()));
+        return result;
+    }
+
+    /** One {@code <tr>} for the layout's scenario table: name, elapsed, status pill. */
+    private String buildLayoutScenarioRow(Test scenario, Map<String, Queue<String>> oneDriveLinkMap) {
+        String startStr = scenario.getStartTime() != null
+                ? DateHelper.getDateInFormat(scenario.getStartTime(), "HH:mm:ss")
+                : "";
+        String endStr = scenario.getEndTime() != null
+                ? DateHelper.getDateInFormat(scenario.getEndTime(), "HH:mm:ss")
+                : "";
+        String elapsed = DateHelper.getElapsedTime(scenario.getStartTime(), scenario.getEndTime());
+        boolean passed = scenario.getStatus() != null && "Pass".equalsIgnoreCase(scenario.getStatus().getName());
+        String pillBg = passed ? "#c6f6d5" : "#fed7d7";
+        String pillColor = passed ? "#22543d" : "#742a2a";
+        String pillText = passed ? "Passed" : "Failed";
+
+        String oneDriveLink = null;
+        if (oneDriveLinkMap != null) {
+            Queue<String> links = oneDriveLinkMap.get(scenario.getName());
+            if (links != null && !links.isEmpty()) {
+                oneDriveLink = links.poll();
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<tr>\n");
+        sb.append("  <td align=\"left\" style=\"padding: 15px; border-bottom: 1px solid #edf2f7;\">\n");
+        sb.append("    <span style=\"color: #2b6cb0; font-weight: bold; font-size: 15px; display: block; margin-bottom: 4px;\">").append(escapeHtml(scenario.getName())).append("</span>\n");
+        if (oneDriveLink != null && !oneDriveLink.isBlank()) {
+            sb.append("    <span style=\"display: block; margin-bottom: 4px;\"><a href=\"").append(escapeHtml(oneDriveLink)).append("\" target=\"_blank\" style=\"font-size: 12px; color: #3182ce; text-decoration: underline;\">[Video]</a></span>\n");
+        }
+        sb.append("    <span style=\"font-size: 11px; color: #a0aec0;\">Start: ").append(startStr).append(" | End: ").append(endStr).append("</span>\n");
+        sb.append("  </td>\n");
+        sb.append("  <td align=\"center\" style=\"padding: 15px; border-bottom: 1px solid #edf2f7; font-size: 13px; color: #718096; font-family: monospace;\">").append(elapsed != null ? elapsed : "").append("</td>\n");
+        sb.append("  <td align=\"right\" style=\"padding: 15px; border-bottom: 1px solid #edf2f7;\"><span style=\"background-color: ").append(pillBg).append("; color: ").append(pillColor).append("; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 12px;\">").append(pillText).append("</span></td>\n");
+        sb.append("</tr>\n");
+        return sb.toString();
+    }
+
+    /** The scenario's step table, nested in a full-width cell of the layout's scenario table. */
+    private String buildLayoutStepsRow(Test scenario) {
+        String steps = buildProductionStepsSection(scenario);
+        if (steps == null || steps.isEmpty()) {
+            return "";
+        }
+        return "<tr>\n  <td colspan=\"3\" style=\"padding: 0 15px 15px 15px; border-bottom: 1px solid #edf2f7;\">\n"
+                + steps
+                + "  </td>\n</tr>\n";
     }
 
     private String buildProductionEmailHeader() {

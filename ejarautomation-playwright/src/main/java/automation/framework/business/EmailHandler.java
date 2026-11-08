@@ -188,7 +188,7 @@ public class EmailHandler {
         if (htmlBody == null || !htmlBody.contains("cid:high-logo")) {
             return htmlBody;
         }
-        String hosted = PropManager.getInstance().getProperty("report.email.logo.url");
+        String hosted = layoutAwareProperty("report.email.logo.url");
         if (hosted != null && !hosted.isBlank()) {
             return htmlBody.replace("src=\"cid:high-logo\"", "src=\"" + escapeHtmlAttr(hosted.trim()) + "\"");
         }
@@ -209,6 +209,22 @@ public class EmailHandler {
 
     private static String escapeHtmlAttr(String s) {
         return s.replace("&", "&amp;").replace("\"", "&quot;");
+    }
+
+    /**
+     * Same precedence as {@link SendAggregatedReport}: a layout file selected by the running test
+     * runner wins, otherwise the usual global lookup applies.
+     */
+    private static String layoutAwareProperty(String key) {
+        String layoutFile = System.getProperty(SendAggregatedReport.EMAIL_LAYOUT_FILE_PROPERTY);
+        if (layoutFile != null && !layoutFile.trim().isEmpty()) {
+            String value = PropManager.getInstance().getPropertyFromFile(layoutFile.trim(), key);
+            if (value != null && !value.isEmpty()) {
+                return value;
+            }
+        }
+        String value = PropManager.getInstance().getPropertyFromFile("emailProperites.properties", key);
+        return (value != null && !value.isEmpty()) ? value : PropManager.getInstance().getProperty(key);
     }
 
     /** Prefer the branded file name {@code Qoad logo.png}; fall back to legacy names. */
