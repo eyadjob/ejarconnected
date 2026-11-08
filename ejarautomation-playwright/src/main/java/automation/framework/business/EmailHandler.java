@@ -163,12 +163,12 @@ public class EmailHandler {
         addInlineIfExists(list, chartDir + File.separator + RunResultsInformation.testStepsTestStatusPieChartName + ".png", "<testCasesStepsPieChart-icon>", "image/png");
         // Only add logo as inline attachment if HTML still references it (fallback when base64 embedding failed)
         if (htmlBody != null && htmlBody.contains("cid:high-logo")) {
-            File logoFile = resolveQoadLogoFile();
+            File logoFile = resolveReportLogoFile();
             if (logoFile != null) {
                 try {
                     byte[] bytes = Files.readAllBytes(logoFile.toPath());
                     String base64 = Base64.getEncoder().encodeToString(bytes);
-                    list.add(new MicrosoftGraphMailSender.GraphAttachment(logoFile.getName(), "<high-logo>", "image/png", base64));
+                    list.add(new MicrosoftGraphMailSender.GraphAttachment(logoFile.getName(), "<high-logo>", logoContentType(logoFile), base64));
                 } catch (IOException e) {
                     System.err.println("EmailHandler: failed to read logo for inline attachment: " + e.getMessage());
                 }
@@ -188,17 +188,17 @@ public class EmailHandler {
         if (htmlBody == null || !htmlBody.contains("cid:high-logo")) {
             return htmlBody;
         }
-        String hosted = layoutAwareProperty("report.email.logo.url");
+        String hosted = PropManager.getInstance().getProperty("report.email.logo.url");
         if (hosted != null && !hosted.isBlank()) {
             return htmlBody.replace("src=\"cid:high-logo\"", "src=\"" + escapeHtmlAttr(hosted.trim()) + "\"");
         }
         // Embed logo as base64 data URI so it survives forwarding and mobile view
-        File logoFile = resolveQoadLogoFile();
+        File logoFile = resolveReportLogoFile();
         if (logoFile != null) {
             try {
                 byte[] bytes = Files.readAllBytes(logoFile.toPath());
                 String base64 = Base64.getEncoder().encodeToString(bytes);
-                String dataUri = "data:image/png;base64," + base64;
+                String dataUri = "data:" + logoContentType(logoFile) + ";base64," + base64;
                 return htmlBody.replace("src=\"cid:high-logo\"", "src=\"" + dataUri + "\"");
             } catch (IOException e) {
                 System.err.println("EmailHandler: failed to embed logo as base64: " + e.getMessage());
@@ -211,24 +211,21 @@ public class EmailHandler {
         return s.replace("&", "&amp;").replace("\"", "&quot;");
     }
 
-    /**
-     * Same precedence as {@link SendAggregatedReport}: a layout file selected by the running test
-     * runner wins, otherwise the usual global lookup applies.
-     */
-    private static String layoutAwareProperty(String key) {
-        String layoutFile = System.getProperty(SendAggregatedReport.EMAIL_LAYOUT_FILE_PROPERTY);
-        if (layoutFile != null && !layoutFile.trim().isEmpty()) {
-            String value = PropManager.getInstance().getPropertyFromFile(layoutFile.trim(), key);
-            if (value != null && !value.isEmpty()) {
-                return value;
+    /** Yelo brand logo candidates shipped with the project; preferred over the legacy Qoad logo files. */
+    private static final String[] YELO_LOGO_CANDIDATES = {
+            "logos" + File.separator + "yelo Logo - size reduced.jpg",
+            "logos" + File.separator + "yelo Logo - Copy.jpg",
+            "logos" + File.separator + "yelo Logo.jpg"
+    };
+
+    /** Prefer the Yelo logo; fall back to the legacy Qoad logo files. */
+    private static File resolveReportLogoFile() {
+        for (String candidate : YELO_LOGO_CANDIDATES) {
+            File yeloLogo = new File(System.getProperty("user.dir") + File.separator + candidate);
+            if (yeloLogo.isFile()) {
+                return yeloLogo;
             }
         }
-        String value = PropManager.getInstance().getPropertyFromFile("emailProperites.properties", key);
-        return (value != null && !value.isEmpty()) ? value : PropManager.getInstance().getProperty(key);
-    }
-
-    /** Prefer the branded file name {@code Qoad logo.png}; fall back to legacy names. */
-    private static File resolveQoadLogoFile() {
         File explicitLogo = new File(System.getProperty("user.dir") + File.separator + "email html" + File.separator + "Qoad logo.png");
         if (explicitLogo.isFile()) {
             return explicitLogo;
@@ -244,6 +241,21 @@ public class EmailHandler {
         return null;
     }
 
+    /** MIME type matching the logo extension so inline and base64 images render in every client. */
+    private static String logoContentType(File logoFile) {
+        String name = logoFile.getName().toLowerCase(Locale.ROOT);
+        if (name.endsWith(".jpg") || name.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        if (name.endsWith(".webp")) {
+            return "image/webp";
+        }
+        if (name.endsWith(".svg")) {
+            return "image/svg+xml";
+        }
+        return "image/png";
+    }
+
     private static void addInlineIfExists(List<MicrosoftGraphMailSender.GraphAttachment> list, String filePath, String contentId, String contentType) {
         File f = new File(filePath);
         if (!f.exists()) return;
@@ -256,8 +268,8 @@ public class EmailHandler {
     }
 
     public MimeMultipart addYeloEmailImages(MimeMultipart multipart) throws MessagingException {
-        File qoad = resolveQoadLogoFile();
-        addMultiPartFile(multipart, qoad != null ? qoad.getPath() : System.getProperty("user.dir") + "\\" + "email html" + "\\Qoad logo.png", "<high-logo>");
+        File yeloLogo = resolveReportLogoFile();
+        addMultiPartFile(multipart, yeloLogo != null ? yeloLogo.getPath() : System.getProperty("user.dir") + "\\" + "email html" + "\\Qoad logo.png", "<high-logo>");
         addMultiPartFile(multipart, System.getProperty("user.dir") + "\\" + "email html" + "\\website-icon.png", "<web-icon>");
         addMultiPartFile(multipart, System.getProperty("user.dir") + "\\" + "email html" + "\\email.svg", "<email>");
         addMultiPartFile(multipart, System.getProperty("user.dir") + "\\" + "email html" + "\\mobile.svg", "<mobile>");

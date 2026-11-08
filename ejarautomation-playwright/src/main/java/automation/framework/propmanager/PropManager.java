@@ -76,32 +76,6 @@ public class PropManager {
         return propertyValue.trim();
     }
 
-    /**
-     * Reads a property from one specific properties file, by file name (for example
-     * {@code "emailProperites_yelo_layout.properties"}).
-     *
-     * <p>{@link #getProperty(String)} scans every loaded file and returns the first match, so when two
-     * files define the same key (e.g. {@code report.email.header}) the winner depends on map ordering.
-     * Use this method whenever a runner must pin a value to a known file.</p>
-     *
-     * @return the trimmed value, or {@code ""} when the file or the key is missing
-     */
-    public String getPropertyFromFile(String fileName, String propertyName) {
-        if (fileName == null || fileName.trim().isEmpty()) {
-            return "";
-        }
-        if (propertiesValues.size() == 0) {
-            loadPropertiesFromResource();
-        }
-        Properties fileProps = propertiesValues.get(fileName.trim());
-        if (fileProps == null) {
-            log.warn("Properties file '{}' is not loaded; cannot read '{}'", fileName, propertyName);
-            return "";
-        }
-        String value = fileProps.getProperty(propertyName);
-        return value == null ? "" : value.trim();
-    }
-
     public void setProperty(String propertyName, String propertyValue) {
         try {
             String propertiesFileName = pathPropsFilesInProject + PropManager.getInstance().getPropertiesValues().entrySet().stream().filter(properties -> properties.getValue().getProperty(propertyName) != null).findFirst().get().getKey() ;

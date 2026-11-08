@@ -40,17 +40,6 @@ public class SendAggregatedReport {
     private Map<String, String> environmentVariables;
     private final boolean isProductionRun;
 
-    /**
-     * Runner opt-in: name of a properties file whose {@code report.email.header} /
-     * {@code report.email.footer} form the email shell. A runner sets it in {@code @BeforeClass}, e.g.
-     * {@code System.setProperty(SendAggregatedReport.EMAIL_LAYOUT_FILE_PROPERTY, "emailProperites_yelo_layout.properties")}.
-     * When unset, every run keeps its previous hard-coded design.
-     */
-    public static final String EMAIL_LAYOUT_FILE_PROPERTY = "report.email.layout.file";
-
-    /** Canonical file for the default email shell, used when no runner selected a layout file. */
-    private static final String DEFAULT_EMAIL_PROPERTIES_FILE = "emailProperites.properties";
-
     public SendAggregatedReport(String executionName) {
         this(executionName, (String) null);
     }
@@ -87,39 +76,7 @@ public class SendAggregatedReport {
 
 
     public String getResultEmailHeader() {
-        return emailProperty("report.email.header");
-    }
-
-    /** Name of the layout file selected by the running test runner, or {@code ""} for the default design. */
-    private static String selectedLayoutFile() {
-        String file = System.getProperty(EMAIL_LAYOUT_FILE_PROPERTY);
-        return file == null ? "" : file.trim();
-    }
-
-    /** True when the running test runner asked for a properties-driven email shell. */
-    public boolean hasCustomEmailLayout() {
-        return !selectedLayoutFile().isEmpty();
-    }
-
-    /**
-     * Layout-aware lookup: the runner-selected layout file wins, everything else falls back to
-     * {@link PropManager#getProperty(String)} (which scans all files and may pick either copy of a
-     * duplicated key).
-     */
-    private String emailProperty(String key) {
-        String layoutFile = selectedLayoutFile();
-        if (!layoutFile.isEmpty()) {
-            String value = PropManager.getInstance().getPropertyFromFile(layoutFile, key);
-            if (value != null && !value.isEmpty()) {
-                return value;
-            }
-            log.warn("Layout file '{}' has no '{}'; falling back to the default properties.", layoutFile, key);
-        }
-        // Pin the default to its canonical file: the global lookup would otherwise pick whichever
-        // of emailProperites.properties / emailProperites_yelo_layout.properties happens to win the
-        // map ordering, so editing the layout file could silently change every other runner's email.
-        String value = PropManager.getInstance().getPropertyFromFile(DEFAULT_EMAIL_PROPERTIES_FILE, key);
-        return (value != null && !value.isEmpty()) ? value : PropManager.getInstance().getProperty(key);
+        return PropManager.getInstance().getProperty("report.email.header");
     }
 
     public String addResultRecord(ReportDataHandler reportDataHandler, String testString) {
@@ -216,7 +173,7 @@ public class SendAggregatedReport {
             boolean isLastRow = (i == featureList.size() - 1);
             content.append(addResultRecord(reportDataHandler, "", isLastRow));
         }
-        content.append(emailProperty("report.email.footer").replace("{{currentYear}}", String.valueOf(Year.now().getValue())));
+        content.append(PropManager.getInstance().getProperty("report.email.footer").replace("{{currentYear}}", String.valueOf(Year.now().getValue())));
         String result = content.toString();
         result = result.replace("passedCount", String.valueOf(runResultsInformation.getScenarioPassCount()));
         result = result.replace("failedCount", String.valueOf(runResultsInformation.getScenarioFailCount()));
@@ -344,9 +301,7 @@ public class SendAggregatedReport {
         }
 
         String content;
-        if (isProductionRun && hasCustomEmailLayout()) {
-            content = buildLayoutTestResultsContent(testResult, newReportName);
-        } else if (isProductionRun) {
+        if (isProductionRun) {
             content = buildProductionTestResultsContent(testResult, newReportName);
         } else {
             content = buildTestResultsContent(testResult, newReportName);
@@ -408,7 +363,7 @@ public class SendAggregatedReport {
 
     private void injectLogoIntoHtmlReport(String htmlFilePath) {
         try {
-            File logoSource = resolveQoadLogoFile();
+            File logoSource = resolveReportLogoFile();
             if (logoSource == null || !logoSource.exists()) {
                 log.warn("Logo file not found for HTML report injection.");
                 return;
@@ -420,7 +375,7 @@ public class SendAggregatedReport {
                 return;
             }
 
-            File logoDest = new File(reportFile.getParentFile(), "qoad_logo.png");
+            File logoDest = new File(reportFile.getParentFile(), "yelo_logo" + reportLogoExtension(logoSource));
             Files.copy(logoSource.toPath(), logoDest.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
             Document doc = Jsoup.parse(reportFile, "UTF-8");
@@ -436,8 +391,8 @@ public class SendAggregatedReport {
                 }
                 Element li = new Element("li").addClass("m-r-10");
                 Element img = new Element("img")
-                        .attr("src", "qoad_logo.png")
-                        .attr("alt", "Qoad Logo")
+                        .attr("src", logoDest.getName())
+                        .attr("alt", "Yelo Logo")
                         .attr("style", "height: 40px; width: auto; background: transparent;");
                 li.appendChild(img);
                 ul.appendChild(li);
@@ -451,7 +406,21 @@ public class SendAggregatedReport {
         }
     }
 
-    private File resolveQoadLogoFile() {
+    /** Yelo brand logo candidates shipped with the project; preferred over the legacy Qoad logo files. */
+    private static final String[] YELO_LOGO_CANDIDATES = {
+            "logos" + File.separator + "yelo Logo - size reduced.jpg",
+            "logos" + File.separator + "yelo Logo - Copy.jpg",
+            "logos" + File.separator + "yelo Logo.jpg"
+    };
+
+    /** Prefer the Yelo logo; fall back to the legacy Qoad logo files. */
+    private File resolveReportLogoFile() {
+        for (String candidate : YELO_LOGO_CANDIDATES) {
+            File yeloLogo = new File(System.getProperty("user.dir") + File.separator + candidate);
+            if (yeloLogo.isFile()) {
+                return yeloLogo;
+            }
+        }
         File explicitLogo = new File(System.getProperty("user.dir") + File.separator + "email html" + File.separator + "Qoad logo.png");
         if (explicitLogo.isFile()) {
             return explicitLogo;
@@ -465,6 +434,13 @@ public class SendAggregatedReport {
             }
         }
         return null;
+    }
+
+    /** Keeps the logo file extension (and therefore its MIME type) intact when copying it next to the report. */
+    private String reportLogoExtension(File logoFile) {
+        String name = logoFile.getName();
+        int dot = name.lastIndexOf('.');
+        return dot >= 0 ? name.substring(dot) : ".png";
     }
 
     private void injectVideoLinksIntoHtmlReport(String htmlFilePath) {
@@ -566,100 +542,18 @@ public class SendAggregatedReport {
         return result;
     }
 
-    /**
-     * Builds the email body from the layout file selected by the running test runner, keeping the
-     * production content (one row per scenario, plus that scenario's steps).
-     *
-     * <p>The layout file supplies the shell: its {@code report.email.header} ends inside an open
-     * {@code <tbody>} and its {@code report.email.footer} starts by closing it, so every fragment
-     * appended here is a bare {@code <tr>} matching its three columns
-     * (Feature Scenario | Elapsed | Status). Steps are nested in a {@code colspan="3"} cell.</p>
-     */
-    public String buildLayoutTestResultsContent(ExtentTest extentTestResult, String reportFileName) {
-        if (extentTestResult == null || extentTestResult.getExtent() == null) {
-            log.warn("buildLayoutTestResultsContent: ExtentTest or Extent is null; returning empty summary.");
-            return "";
-        }
-        RunResultsInformation runResultsInformation = generateRunResultsInformation(extentTestResult);
-        List<Test> featureList = extentTestResult.getExtent().getReport().getTestList();
-
-        StringBuilder content = new StringBuilder(emailProperty("report.email.header"));
-        Map<String, Queue<String>> oneDriveLinkMap = buildOneDriveLinkMap();
-        for (Test feature : featureList) {
-            for (Test scenario : feature.getChildren()) {
-                content.append(buildLayoutScenarioRow(scenario, oneDriveLinkMap));
-                content.append(buildLayoutStepsRow(scenario));
-            }
-        }
-        content.append(emailProperty("report.email.footer")
-                .replace("{{currentYear}}", String.valueOf(Year.now().getValue())));
-
-        String result = content.toString();
-        result = result.replace("passedCount", String.valueOf(runResultsInformation.getScenarioPassCount()));
-        result = result.replace("failedCount", String.valueOf(runResultsInformation.getScenarioFailCount()));
-        return result;
-    }
-
-    /** One {@code <tr>} for the layout's scenario table: name, elapsed, status pill. */
-    private String buildLayoutScenarioRow(Test scenario, Map<String, Queue<String>> oneDriveLinkMap) {
-        String startStr = scenario.getStartTime() != null
-                ? DateHelper.getDateInFormat(scenario.getStartTime(), "HH:mm:ss")
-                : "";
-        String endStr = scenario.getEndTime() != null
-                ? DateHelper.getDateInFormat(scenario.getEndTime(), "HH:mm:ss")
-                : "";
-        String elapsed = DateHelper.getElapsedTime(scenario.getStartTime(), scenario.getEndTime());
-        boolean passed = scenario.getStatus() != null && "Pass".equalsIgnoreCase(scenario.getStatus().getName());
-        String pillBg = passed ? "#c6f6d5" : "#fed7d7";
-        String pillColor = passed ? "#22543d" : "#742a2a";
-        String pillText = passed ? "Passed" : "Failed";
-
-        String oneDriveLink = null;
-        if (oneDriveLinkMap != null) {
-            Queue<String> links = oneDriveLinkMap.get(scenario.getName());
-            if (links != null && !links.isEmpty()) {
-                oneDriveLink = links.poll();
-            }
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("<tr>\n");
-        sb.append("  <td align=\"left\" style=\"padding: 15px; border-bottom: 1px solid #edf2f7;\">\n");
-        sb.append("    <span style=\"color: #2b6cb0; font-weight: bold; font-size: 15px; display: block; margin-bottom: 4px;\">").append(escapeHtml(scenario.getName())).append("</span>\n");
-        if (oneDriveLink != null && !oneDriveLink.isBlank()) {
-            sb.append("    <span style=\"display: block; margin-bottom: 4px;\"><a href=\"").append(escapeHtml(oneDriveLink)).append("\" target=\"_blank\" style=\"font-size: 12px; color: #3182ce; text-decoration: underline;\">[Video]</a></span>\n");
-        }
-        sb.append("    <span style=\"font-size: 11px; color: #a0aec0;\">Start: ").append(startStr).append(" | End: ").append(endStr).append("</span>\n");
-        sb.append("  </td>\n");
-        sb.append("  <td align=\"center\" style=\"padding: 15px; border-bottom: 1px solid #edf2f7; font-size: 13px; color: #718096; font-family: monospace;\">").append(elapsed != null ? elapsed : "").append("</td>\n");
-        sb.append("  <td align=\"right\" style=\"padding: 15px; border-bottom: 1px solid #edf2f7;\"><span style=\"background-color: ").append(pillBg).append("; color: ").append(pillColor).append("; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 12px;\">").append(pillText).append("</span></td>\n");
-        sb.append("</tr>\n");
-        return sb.toString();
-    }
-
-    /** The scenario's step table, nested in a full-width cell of the layout's scenario table. */
-    private String buildLayoutStepsRow(Test scenario) {
-        String steps = buildProductionStepsSection(scenario);
-        if (steps == null || steps.isEmpty()) {
-            return "";
-        }
-        return "<tr>\n  <td colspan=\"3\" style=\"padding: 0 15px 15px 15px; border-bottom: 1px solid #edf2f7;\">\n"
-                + steps
-                + "  </td>\n</tr>\n";
-    }
-
     private String buildProductionEmailHeader() {
         return "<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
                 "<head>\n" +
                 "    <meta charset=\"UTF-8\">\n" +
                 "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
-                "    <title>QOAD Automation Test Report</title>\n" +
+                "    <title>Yelo Automation Test Report</title>\n" +
                 "    <style>\n" +
                 "        body { margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }\n" +
                 "        .wrapper { width: 100%; max-width: 900px; margin: 0 auto; background-color: #ffffff; }\n" +
                 "        .logo-section { text-align: center; padding: 24px; background-color: #ffffff; border-bottom: 1px solid #e0e0e0; }\n" +
-                "        .header-section { background-color: #004A7C; padding: 40px; text-align: center; }\n" +
+                "        .header-section { background-color: #4D0970; padding: 40px; text-align: center; }\n" +
                 "        .summary-section { padding: 32px 40px; background-color: #ffffff; }\n" +
                 "        .scenarios-section { padding: 0 40px 32px 40px; background-color: #ffffff; }\n" +
                 "        .elapsed { font-size: 14px; color: #666666; font-weight: 500; font-family: 'Courier New', monospace; text-align: center; }\n" +
@@ -670,7 +564,7 @@ public class SendAggregatedReport {
                 "        .step-keyword { font-weight: 600; color: #555555; }\n" +
                 "        .step-text { color: #444444; }\n" +
                 "        .step-status { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 10px; }\n" +
-                "        .footer-section { background-color: #004A7C; color: #ffffff; padding: 32px 40px; }\n" +
+                "        .footer-section { background-color: #4D0970; color: #ffffff; padding: 32px 40px; }\n" +
 
                 "        @media only screen and (max-width: 600px) {\n" +
                 "            .summary-section, .scenarios-section { padding: 24px 20px !important; }\n" +
@@ -688,12 +582,12 @@ public class SendAggregatedReport {
                 "                    <!-- Logo Section -->\n" +
                 "                    <tr>\n" +
                 "                        <td class=\"logo-section\" style=\"text-align: center; padding: 24px; background-color: #ffffff; border-bottom: 1px solid #e0e0e0;\">\n" +
-                "                            <img src=\"cid:high-logo\" alt=\"QOAD\" width=\"280\" style=\"display: inline-block; max-width: 280px; width: 100%; height: auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;\">\n" +
+                "                            <img src=\"cid:high-logo\" alt=\"Yelo\" width=\"280\" style=\"display: inline-block; max-width: 280px; width: 100%; height: auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;\">\n" +
                 "                        </td>\n" +
                 "                    </tr>\n" +
                 "                    <!-- Header Section -->\n" +
                 "                    <tr>\n" +
-                "                        <td class=\"header-section\" style=\"background-color: #004A7C; padding: 40px; text-align: center;\">\n" +
+                "                        <td class=\"header-section\" style=\"background-color: #4D0970; padding: 40px; text-align: center;\">\n" +
                 "                            <h1 style=\"color: #ffffff; font-size: 28px; font-weight: 600; margin: 0; letter-spacing: 0.5px;\">Automation Test Report</h1>\n" +
                 "                        </td>\n" +
                 "                    </tr>\n" +
@@ -896,22 +790,22 @@ public class SendAggregatedReport {
                 "                    </tr>\n" +
                 "                    <!-- Footer Section -->\n" +
                 "                    <tr>\n" +
-                "                        <td class=\"footer-section\" style=\"background-color: #004A7C; color: #ffffff; padding: 32px 40px;\">\n" +
+                "                        <td class=\"footer-section\" style=\"background-color: #4D0970; color: #ffffff; padding: 32px 40px;\">\n" +
                 "                            <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\">\n" +
                 "                                <tr>\n" +
                 "                                    <td style=\"font-size: 13px; line-height: 1.7; color: #c0c8d4;\" width=\"48%\" valign=\"top\">\n" +
-                "                                        &copy; " + Year.now().getValue() + " QOAD is an innovator for the mobility industry, specialized in developing solutions and services to manage fleet and Rent a Car business.\n" +
+                "                                        &copy; " + Year.now().getValue() + " Yelo is an innovator for the mobility industry, specialized in developing solutions and services to manage fleet and Rent a Car business.\n" +
                 "                                    </td>\n" +
-                "                                    <td width=\"4%\" style=\"background-color: #004A7C;\"></td>\n" +
+                "                                    <td width=\"4%\" style=\"background-color: #4D0970;\"></td>\n" +
                 "                                    <td style=\"font-size: 13px; line-height: 1.7; color: #c0c8d4; text-align: right; direction: rtl;\" width=\"48%\" valign=\"top\">\n" +
-                "                                        &copy; " + Year.now().getValue() + " QOAD &#x647;&#x64A; &#x634;&#x631;&#x643;&#x629; &#x645;&#x628;&#x62A;&#x643;&#x631;&#x629; &#x641;&#x64A; &#x635;&#x646;&#x627;&#x639;&#x629; &#x627;&#x644;&#x62A;&#x646;&#x642;&#x644;&#x60C; &#x645;&#x62A;&#x62E;&#x635;&#x635;&#x629; &#x641;&#x64A; &#x62A;&#x637;&#x648;&#x64A;&#x631; &#x627;&#x644;&#x62D;&#x644;&#x648;&#x644; &#x648;&#x627;&#x644;&#x62E;&#x62F;&#x645;&#x627;&#x62A; &#x644;&#x625;&#x62F;&#x627;&#x631;&#x629; &#x627;&#x644;&#x623;&#x633;&#x637;&#x648;&#x644; &#x648;&#x623;&#x639;&#x645;&#x627;&#x644; &#x62A;&#x623;&#x62C;&#x64A;&#x631; &#x627;&#x644;&#x633;&#x64A;&#x627;&#x631;&#x627;&#x62A;.\n" +
+                "                                        &copy; " + Year.now().getValue() + " Yelo &#x647;&#x64A; &#x634;&#x631;&#x643;&#x629; &#x645;&#x628;&#x62A;&#x643;&#x631;&#x629; &#x641;&#x64A; &#x635;&#x646;&#x627;&#x639;&#x629; &#x627;&#x644;&#x62A;&#x646;&#x642;&#x644;&#x60C; &#x645;&#x62A;&#x62E;&#x635;&#x635;&#x629; &#x641;&#x64A; &#x62A;&#x637;&#x648;&#x64A;&#x631; &#x627;&#x644;&#x62D;&#x644;&#x648;&#x644; &#x648;&#x627;&#x644;&#x62E;&#x62F;&#x645;&#x627;&#x62A; &#x644;&#x625;&#x62F;&#x627;&#x631;&#x629; &#x627;&#x644;&#x623;&#x633;&#x637;&#x648;&#x644; &#x648;&#x623;&#x639;&#x645;&#x627;&#x644; &#x62A;&#x623;&#x62C;&#x64A;&#x631; &#x627;&#x644;&#x633;&#x64A;&#x627;&#x631;&#x627;&#x62A;.\n" +
                 "                                    </td>\n" +
                 "                                </tr>\n" +
                 "                            </table>\n" +
                 "                            <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\">\n" +
                 "                                <tr>\n" +
-                "                                    <td style=\"text-align: center; font-size: 12px; color: #a0aab8; padding-top: 16px; border-top: 1px solid #1a5a8c;\">\n" +
-                "                                        &#9993; info@qoad.com &nbsp;&nbsp;|&nbsp;&nbsp; &#9742; +966 11 2848 244 &nbsp;&nbsp;|&nbsp;&nbsp; &#128205; Saudi Arabia, Riyadh, Al Yasmeen, Al Ulaya.\n" +
+                "                                    <td style=\"text-align: center; font-size: 12px; color: #a0aab8; padding-top: 16px; border-top: 1px solid #671980;\">\n" +
+                "                                        &#9993; info@iyelo.com &nbsp;&nbsp;|&nbsp;&nbsp; &#9742; +966 11 2848 244 &nbsp;&nbsp;|&nbsp;&nbsp; &#128205; Saudi Arabia, Riyadh, Al Yasmeen, Al Ulaya.\n" +
                 "                                    </td>\n" +
                 "                                </tr>\n" +
                 "                            </table>\n" +

@@ -100,12 +100,6 @@
             </properties>
         </profile>
         <profile>
-            <id>TestRunner_Yelo_Layout_Rental_Agent_Production</id>
-            <properties>
-                <test-classes>**/TestRunner_Yelo_Layout_Rental_Agent_Production.java</test-classes>
-            </properties>
-        </profile>
-        <profile>
             <id>TestRunner_Alyam_Validation_English</id>
             <properties>
                 <test-classes>**/TestRunner_Alyam_Validation_English.java</test-classes>
