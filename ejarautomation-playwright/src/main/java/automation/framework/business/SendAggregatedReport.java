@@ -583,7 +583,7 @@ public class SendAggregatedReport {
                 "                    <!-- Header Section: logo and report title share one cell -->\n" +
                 "                    <tr>\n" +
                 "                        <td class=\"header-section\" style=\"background-color: #4D0970; padding: 18px 40px; text-align: center;\">\n" +
-                "                            <img src=\"cid:high-logo\" alt=\"Yelo\" width=\"196\" style=\"display: block; margin: 0 auto 8px auto; max-width: 196px; width: 100%; height: auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;\">\n" +
+                "                            <img src=\"cid:high-logo\" alt=\"Yelo\" width=\"196\" style=\"display: block; margin: 0 auto 11px auto; max-width: 196px; width: 100%; height: auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;\">\n" +
                 "                            <h1 style=\"color: #ffffff; font-size: 28px; font-weight: 600; line-height: 1.2; margin: 0; letter-spacing: 0.5px;\">Automation Test Report</h1>\n" +
                 "                        </td>\n" +
                 "                    </tr>\n" +
