@@ -213,6 +213,8 @@ public class EmailHandler {
 
     /** Yelo brand logo candidates shipped with the project; preferred over the legacy Qoad logo files. */
     private static final String[] YELO_LOGO_CANDIDATES = {
+            "logos" + File.separator + "Yelo_logo_text_only.png",
+            "logos" + File.separator + "Yelo_logo_text_only.webp",
             "logos" + File.separator + "yelo Logo - size reduced.jpg",
             "logos" + File.separator + "yelo Logo - Copy.jpg",
             "logos" + File.separator + "yelo Logo.jpg"

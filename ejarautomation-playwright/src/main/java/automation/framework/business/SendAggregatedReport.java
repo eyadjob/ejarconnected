@@ -408,6 +408,8 @@ public class SendAggregatedReport {
 
     /** Yelo brand logo candidates shipped with the project; preferred over the legacy Qoad logo files. */
     private static final String[] YELO_LOGO_CANDIDATES = {
+            "logos" + File.separator + "Yelo_logo_text_only.png",
+            "logos" + File.separator + "Yelo_logo_text_only.webp",
             "logos" + File.separator + "yelo Logo - size reduced.jpg",
             "logos" + File.separator + "yelo Logo - Copy.jpg",
             "logos" + File.separator + "yelo Logo.jpg"
@@ -552,8 +554,7 @@ public class SendAggregatedReport {
                 "    <style>\n" +
                 "        body { margin: 0; padding: 0; background-color: #f5f5f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }\n" +
                 "        .wrapper { width: 100%; max-width: 900px; margin: 0 auto; background-color: #ffffff; }\n" +
-                "        .logo-section { text-align: center; padding: 24px; background-color: #ffffff; border-bottom: 1px solid #e0e0e0; }\n" +
-                "        .header-section { background-color: #FAC902; padding: 40px; text-align: center; }\n" +
+                "        .header-section { background-color: #4D0970; padding: 32px 40px; text-align: center; }\n" +
                 "        .summary-section { padding: 32px 40px; background-color: #ffffff; }\n" +
                 "        .scenarios-section { padding: 0 40px 32px 40px; background-color: #ffffff; }\n" +
                 "        .elapsed { font-size: 14px; color: #666666; font-weight: 500; font-family: 'Courier New', monospace; text-align: center; }\n" +
@@ -564,7 +565,7 @@ public class SendAggregatedReport {
                 "        .step-keyword { font-weight: 600; color: #555555; }\n" +
                 "        .step-text { color: #444444; }\n" +
                 "        .step-status { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 10px; }\n" +
-                "        .footer-section { background-color: #FAC902; color: #4D0970; padding: 32px 40px; }\n" +
+                "        .footer-section { background-color: #4D0970; color: #ffffff; padding: 32px 40px; }\n" +
 
                 "        @media only screen and (max-width: 600px) {\n" +
                 "            .summary-section, .scenarios-section { padding: 24px 20px !important; }\n" +
@@ -579,16 +580,11 @@ public class SendAggregatedReport {
                 "        <tr>\n" +
                 "            <td align=\"center\">\n" +
                 "                <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"900\" style=\"max-width: 900px; background-color: #ffffff;\" class=\"wrapper\">\n" +
-                "                    <!-- Logo Section -->\n" +
+                "                    <!-- Header Section: logo and report title share one cell -->\n" +
                 "                    <tr>\n" +
-                "                        <td class=\"logo-section\" style=\"text-align: center; padding: 24px; background-color: #ffffff; border-bottom: 1px solid #e0e0e0;\">\n" +
-                "                            <img src=\"cid:high-logo\" alt=\"Yelo\" width=\"280\" style=\"display: inline-block; max-width: 280px; width: 100%; height: auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;\">\n" +
-                "                        </td>\n" +
-                "                    </tr>\n" +
-                "                    <!-- Header Section -->\n" +
-                "                    <tr>\n" +
-                "                        <td class=\"header-section\" style=\"background-color: #FAC902; padding: 40px; text-align: center;\">\n" +
-                "                            <h1 style=\"color: #4D0970; font-size: 28px; font-weight: 600; margin: 0; letter-spacing: 0.5px;\">Automation Test Report</h1>\n" +
+                "                        <td class=\"header-section\" style=\"background-color: #4D0970; padding: 32px 40px; text-align: center;\">\n" +
+                "                            <img src=\"cid:high-logo\" alt=\"Yelo\" width=\"196\" style=\"display: inline-block; max-width: 196px; width: 100%; height: auto; margin: 0 0 16px 0; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;\">\n" +
+                "                            <h1 style=\"color: #ffffff; font-size: 28px; font-weight: 600; margin: 0; letter-spacing: 0.5px;\">Automation Test Report</h1>\n" +
                 "                        </td>\n" +
                 "                    </tr>\n" +
                 "                    <!-- Execution Summary -->\n" +
@@ -790,21 +786,21 @@ public class SendAggregatedReport {
                 "                    </tr>\n" +
                 "                    <!-- Footer Section -->\n" +
                 "                    <tr>\n" +
-                "                        <td class=\"footer-section\" style=\"background-color: #FAC902; color: #4D0970; padding: 32px 40px;\">\n" +
+                "                        <td class=\"footer-section\" style=\"background-color: #4D0970; color: #ffffff; padding: 32px 40px;\">\n" +
                 "                            <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\">\n" +
                 "                                <tr>\n" +
-                "                                    <td style=\"font-size: 13px; line-height: 1.7; color: #4D0970;\" width=\"48%\" valign=\"top\">\n" +
+                "                                    <td style=\"font-size: 13px; line-height: 1.7; color: #c0c8d4;\" width=\"48%\" valign=\"top\">\n" +
                 "                                        &copy; " + Year.now().getValue() + " Yelo is an innovator for the mobility industry, specialized in developing solutions and services to manage fleet and Rent a Car business.\n" +
                 "                                    </td>\n" +
-                "                                    <td width=\"4%\" style=\"background-color: #FAC902;\"></td>\n" +
-                "                                    <td style=\"font-size: 13px; line-height: 1.7; color: #4D0970; text-align: right; direction: rtl;\" width=\"48%\" valign=\"top\">\n" +
+                "                                    <td width=\"4%\" style=\"background-color: #4D0970;\"></td>\n" +
+                "                                    <td style=\"font-size: 13px; line-height: 1.7; color: #c0c8d4; text-align: right; direction: rtl;\" width=\"48%\" valign=\"top\">\n" +
                 "                                        &copy; " + Year.now().getValue() + " Yelo &#x647;&#x64A; &#x634;&#x631;&#x643;&#x629; &#x645;&#x628;&#x62A;&#x643;&#x631;&#x629; &#x641;&#x64A; &#x635;&#x646;&#x627;&#x639;&#x629; &#x627;&#x644;&#x62A;&#x646;&#x642;&#x644;&#x60C; &#x645;&#x62A;&#x62E;&#x635;&#x635;&#x629; &#x641;&#x64A; &#x62A;&#x637;&#x648;&#x64A;&#x631; &#x627;&#x644;&#x62D;&#x644;&#x648;&#x644; &#x648;&#x627;&#x644;&#x62E;&#x62F;&#x645;&#x627;&#x62A; &#x644;&#x625;&#x62F;&#x627;&#x631;&#x629; &#x627;&#x644;&#x623;&#x633;&#x637;&#x648;&#x644; &#x648;&#x623;&#x639;&#x645;&#x627;&#x644; &#x62A;&#x623;&#x62C;&#x64A;&#x631; &#x627;&#x644;&#x633;&#x64A;&#x627;&#x631;&#x627;&#x62A;.\n" +
                 "                                    </td>\n" +
                 "                                </tr>\n" +
                 "                            </table>\n" +
                 "                            <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" width=\"100%\">\n" +
                 "                                <tr>\n" +
-                "                                    <td style=\"text-align: center; font-size: 12px; color: #4D0970; padding-top: 16px; border-top: 1px solid #671980;\">\n" +
+                "                                    <td style=\"text-align: center; font-size: 12px; color: #a0aab8; padding-top: 16px; border-top: 1px solid #671980;\">\n" +
                 "                                        &#9993; info@iyelo.com &nbsp;&nbsp;|&nbsp;&nbsp; &#9742; +966 11 2848 244 &nbsp;&nbsp;|&nbsp;&nbsp; &#128205; Saudi Arabia, Riyadh, Al Yasmeen, Al Ulaya.\n" +
                 "                                    </td>\n" +
                 "                                </tr>\n" +
