@@ -168,7 +168,7 @@ public class EmailHandler {
                 try {
                     byte[] bytes = Files.readAllBytes(logoFile.toPath());
                     String base64 = Base64.getEncoder().encodeToString(bytes);
-                    list.add(new MicrosoftGraphMailSender.GraphAttachment(logoFile.getName(), "<high-logo>", logoContentType(logoFile), base64));
+                    list.add(new MicrosoftGraphMailSender.GraphAttachment(logoFile.getName(), "high-logo", logoContentType(logoFile), base64));
                 } catch (IOException e) {
                     System.err.println("EmailHandler: failed to read logo for inline attachment: " + e.getMessage());
                 }
@@ -179,10 +179,11 @@ public class EmailHandler {
 
     /**
      * Resolves {@code src="cid:high-logo"} for the automation report:
-     * 1. Uses {@code report.email.logo.url} if set (best for all clients).
-     * 2. Otherwise embeds the logo as a base64 data URI so it survives forwarding
-     *    and works on Outlook mobile (CIDs often break when forwarded).
-     * 3. Falls back to leaving {@code cid:high-logo} in place if embedding fails.
+     * 1. Uses {@code report.email.logo.url} if set (remote image - Outlook holds these behind
+     *    the "show blocked content" prompt until the recipient allows images).
+     * 2. Otherwise leaves {@code cid:high-logo} untouched so the logo travels with the message as
+     *    an inline MIME part. Outlook ignores {@code data:} URIs entirely (broken image icon), so
+     *    CID is the only variant that renders with no user interaction.
      */
     static String prepareReportEmailHtmlWithLogo(String htmlBody) {
         if (htmlBody == null || !htmlBody.contains("cid:high-logo")) {
@@ -191,18 +192,6 @@ public class EmailHandler {
         String hosted = PropManager.getInstance().getProperty("report.email.logo.url");
         if (hosted != null && !hosted.isBlank()) {
             return htmlBody.replace("src=\"cid:high-logo\"", "src=\"" + escapeHtmlAttr(hosted.trim()) + "\"");
-        }
-        // Embed logo as base64 data URI so it survives forwarding and mobile view
-        File logoFile = resolveReportLogoFile();
-        if (logoFile != null) {
-            try {
-                byte[] bytes = Files.readAllBytes(logoFile.toPath());
-                String base64 = Base64.getEncoder().encodeToString(bytes);
-                String dataUri = "data:" + logoContentType(logoFile) + ";base64," + base64;
-                return htmlBody.replace("src=\"cid:high-logo\"", "src=\"" + dataUri + "\"");
-            } catch (IOException e) {
-                System.err.println("EmailHandler: failed to embed logo as base64: " + e.getMessage());
-            }
         }
         return htmlBody;
     }
