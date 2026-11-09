@@ -24,8 +24,8 @@ import java.io.IOException;
         features = {"src/test/resources/feature/yelo/"},
         monochrome = true,
         glue = {"stepdefs"},
-//        name = {"^booking pay later validation Yelo production \\(iyelo\\.com\\)$|booking pay later validation Yelo production \\(iyelo\\.ch\\)"})
-        name = {"^booking pay later validation Yelo production \\(iyelo\\.com\\)$"})
+        name = {"^booking pay later validation Yelo production \\(iyelo\\.com\\)$|booking pay later validation Yelo production \\(iyelo\\.ch\\)"})
+//        name = {"^booking pay later validation Yelo production \\(iyelo\\.com\\)$"})
 public class TestRunner_Yelo_Rental_Agent_Production {
 
     @BeforeClass
