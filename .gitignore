@@ -9,3 +9,8 @@ Credentials/
 target/
 ejarautomation-playwright/target/
 ejarautomation-playwright/.idea/
+
+# Playwright MCP runtime output - page snapshots, console logs and screenshots
+# written by the MCP browser during a run (McpPlaywrightClient / the 'AI MCP' feature).
+**/playwright-mcp/
+**/.playwright-mcp/
