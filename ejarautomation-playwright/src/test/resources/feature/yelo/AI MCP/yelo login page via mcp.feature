@@ -10,8 +10,8 @@ Feature: Yelo login page verified with the Playwright MCP browser
     And DeepSeek confirms the page matches the Yelo login design
       """
       - Rentey wordmark in the top-right corner
-      - Yellow "YELO بيلو" tenant logo centred above the login form
-      - label "User name or email" with an empty text input below it
+      - Yellow "YELO يلو" tenant logo centred above the login form
+      - the Label must NOT be visible "User name or email" with an empty text input below it
       - Label "Password" with a masked input and an eye toggle icon
       - Salmon / light-orange "Log in" button below the password field
       - Four small language flag icons underneath the button

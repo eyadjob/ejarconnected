@@ -2,6 +2,7 @@ package stepdefs.mcp;
 
 import automation.framework.ai.DeepSeekVisionValidator;
 import automation.framework.listener.StepTimingFormatter;
+import automation.framework.listener.StepTimingSupport;
 import automation.framework.mcp.McpPlaywrightClient;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
@@ -31,7 +32,6 @@ public class PageMcpStepsDef {
 
     private static final String MCP_OUTPUT_DIR = "test output/playwright-mcp/";
     private static final String DEEPSEEK_SCREENSHOT = "deepseek-verification.png";
-    private static final String TAB = "\t";
 
     /** Used only when the DeepSeek step is written without a docstring checklist. */
     private static final String DEFAULT_LOGIN_CHECKLIST =
@@ -79,11 +79,8 @@ public class PageMcpStepsDef {
             // Evidence comes from the same MCP browser the previous steps used.
             mcp.screenshot(screenshotPath);
             byte[] png = Files.readAllBytes(Paths.get(screenshotPath));
-
-            String review = (checklist == null || checklist.trim().isEmpty())
-                    ? DEFAULT_LOGIN_CHECKLIST : checklist.trim();
             DeepSeekVisionValidator.Verdict verdict = new DeepSeekVisionValidator()
-                    .validate(png, "Yelo login page at https://ejarypp.qoad.com:4800/", review);
+                    .validate(png, "Yelo login page at https://ejarypp.qoad.com:4800/", checklist.trim());
 
             System.out.println("DeepSeek verdict: " + verdict);
             Assert.assertTrue("DeepSeek did not confirm the login page design (" + verdict
@@ -121,19 +118,13 @@ public class PageMcpStepsDef {
     }
 
     /**
-     * Prints {@code <step text>\t<milliseconds>} after the step finishes, unless
-     * {@link StepTimingFormatter} already reports the timings for this run.
+     * Publishes the step text so the generic {@code Hook} can print
+     * {@code <step text>\t<milliseconds> ms} for this step as well, then runs the body.
+     * The console line itself is emitted by the hook, so MCP and ordinary features stay identical.
      */
     private void timed(String stepText, StepBody body) throws Exception {
-        long start = System.nanoTime();
-        try {
-            body.run();
-        } finally {
-            if (!StepTimingFormatter.isActive()) {
-                long millis = (System.nanoTime() - start) / 1_000_000L;
-                System.out.println("    " + stepText + TAB + millis + " ms");
-            }
-        }
+        StepTimingSupport.setLabel(stepText);
+        body.run();
     }
 
     private void requireClient() {
