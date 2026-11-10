@@ -1,4 +1,3 @@
-
 package automation.framework.ApiAutomation;
 
 import automation.framework.propmanager.PropManager;
@@ -13,284 +12,151 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The API engine. Written once, used by every API class.
- * State is kept per thread, so each scenario has its own session,
- * headers and stored values.
+ * The API engine. One instance per scenario, so the session, headers,
+ * last response and stored values belong to that scenario only.
  */
 public class ApiClient {
 
-    // ASSUMED standard ABP login endpoint.
-    // Check it against your JMeter login request.
-    private static final String LOGIN_ENDPOINT =
-            "api/TokenAuth/Authenticate";
+    private final Gson gson = new Gson();
+    private final ApiHeaders headers = new ApiHeaders();
+    private final Map<String, Object> stored = new HashMap<String, Object>();
 
-    private static final Gson GSON = new Gson();
+    private Playwright playwright;
+    private APIRequestContext session;
+    private String lastBody;
+    private int lastStatus;
 
-    private static final ThreadLocal<Playwright> playwright =
-            new ThreadLocal<>();
-
-    private static final ThreadLocal<APIRequestContext> session =
-            new ThreadLocal<>();
-
-    private static final ThreadLocal<Map<String, String>> headers =
-            new ThreadLocal<>();
-
-    private static final ThreadLocal<Map<String, Object>> stored =
-            new ThreadLocal<>();
-
-    private static final ThreadLocal<String> lastBody =
-            new ThreadLocal<>();
-
-    private static final ThreadLocal<Integer> lastStatus =
-            new ThreadLocal<>();
-
-    // ---------- login records ----------
-
-    public record AuthRequest(
-            String userNameOrEmailAddress,
-            String password,
-            boolean rememberClient) {
+    // ---------- headers ----------
+    public ApiHeaders getHeaders() {
+        return headers;
     }
 
-    public record AuthResult(String accessToken) {
-    }
-
-    public record AuthResponse(
-            AuthResult result,
-            boolean success) {
-    }
-
-    // ---------- session and headers ----------
-
+    // ---------- session ----------
     /** Creates the session and the default headers on first use */
-    private static APIRequestContext session() {
+    public APIRequestContext getSession() {
+        if (session == null) {
 
-        if (session.get() == null) {
+            String baseUrl = PropManager.getInstance()
+                    .getProperty("api.base.url");
 
-            playwright.set(Playwright.create());
+            if (baseUrl == null || baseUrl.isBlank()) {
+                throw new IllegalStateException(
+                        "api.base.url is missing or empty");
+            }
 
-            session.set(playwright.get().request().newContext(
+            baseUrl = baseUrl.trim();
+
+            System.out.println("API Base URL: [" + baseUrl + "]");
+
+            playwright = Playwright.create();
+
+            session = playwright.request().newContext(
                     new APIRequest.NewContextOptions()
-                            .setBaseURL(
+                            .setBaseURL(baseUrl)
+                            .setIgnoreHTTPSErrors(Boolean.parseBoolean(
                                     PropManager.getInstance()
-                                            .getProperty("api.base.url")
-                            )
-                            .setIgnoreHTTPSErrors(
-                                    Boolean.parseBoolean(
-                                            PropManager.getInstance()
-                                                    .getProperty("api.ignore.https.errors")
-                                    )
-                            )
-            ));
-
-            headers.set(new HashMap<String, String>());
-
-            headers.get().put("Accept", "application/json");
-            headers.get().put("Accept-Language", "en");
-            headers.get().put("X-Requested-With", "XMLHttpRequest");
-
-            headers.get().put(
-                    "Abp.TenantId",
-                    PropManager.getInstance()
-                            .getProperty("api.tenant.id")
+                                            .getProperty("api.ignore.https.errors")))
             );
+
+            headers.setDefaults();
         }
 
-        return session.get();
-    }
-
-    /** Add or replace a header for the rest of the scenario */
-    public static void header(String name, String value) {
-
-        session();
-
-        headers.get().put(name.trim(), value.trim());
-    }
-
-    /**
-     * Logs in once per scenario.
-     * Every GET/POST/PUT/DELETE calls it,
-     * so nobody has to.
-     */
-    private static void ensureLoggedIn() {
-
-        session();
-
-        if (headers.get().containsKey("Authorization")) {
-            return;
-        }
-
-        send("POST", LOGIN_ENDPOINT, new AuthRequest(
-                PropManager.getInstance()
-                        .getProperty("api.admin.username"),
-                PropManager.getInstance()
-                        .getProperty("api.admin.password"),
-                false
-        ));
-
-        System.out.println("API login status: " + lastStatus.get());
-
-        AuthResponse parsed = readBody(AuthResponse.class);
-
-        if (parsed == null
-                || parsed.result() == null
-                || parsed.result().accessToken() == null) {
-
-            throw new IllegalStateException(
-                    "API login failed. Status: " + lastStatus.get()
-                            + ", body: " + lastBody.get()
-            );
-        }
-
-        headers.get().put(
-                "Authorization",
-                "Bearer " + parsed.result().accessToken()
-        );
+        return session;
     }
 
     // ---------- requests ----------
-
-    public static APIResponse get(String endpoint) {
-
-        ensureLoggedIn();
-
-        return send("GET", endpoint, null);
+    public APIResponse get(String uri) {
+        return send("GET", uri, null);
     }
 
     /** body can be a record, any object or a ready JSON String */
-    public static APIResponse post(String endpoint, Object body) {
-
-        ensureLoggedIn();
-
-        return send("POST", endpoint, body);
+    public APIResponse post(String uri, Object body) {
+        return send("POST", uri, body);
     }
 
-    public static APIResponse put(String endpoint, Object body) {
-
-        ensureLoggedIn();
-
-        return send("PUT", endpoint, body);
+    public APIResponse put(String uri, Object body) {
+        return send("PUT", uri, body);
     }
 
-    public static APIResponse delete(String endpoint) {
-
-        ensureLoggedIn();
-
-        return send("DELETE", endpoint, null);
+    public APIResponse delete(String uri) {
+        return send("DELETE", uri, null);
     }
 
-    private static APIResponse send(
-            String method,
-            String endpoint,
-            Object body) {
-
-        session();
+    public APIResponse send(String method, String uri, Object body) {
+        APIRequestContext requestSession = getSession();
 
         RequestOptions options = RequestOptions.create();
-
-        for (Map.Entry<String, String> h : headers.get().entrySet()) {
+        for (Map.Entry<String, String> h : headers.getAll().entrySet()) {
             options.setHeader(h.getKey(), h.getValue());
         }
 
         if (body != null) {
-
-            options.setHeader("Content-Type", "application/json");
-
-            options.setData(
-                    body instanceof String
-                            ? (String) body
-                            : GSON.toJson(body)
-            );
+            options.setHeader(ApiHeaders.CONTENT_TYPE, ApiHeaders.JSON);
+            options.setData(body instanceof String ? (String) body : gson.toJson(body));
         }
 
         APIResponse response;
-
         switch (method) {
-
             case "GET":
-                response = session().get(endpoint, options);
+                response = requestSession.get(uri, options);
                 break;
-
             case "POST":
-                response = session().post(endpoint, options);
+                response = requestSession.post(uri, options);
                 break;
-
             case "PUT":
-                response = session().put(endpoint, options);
+                response = requestSession.put(uri, options);
                 break;
-
             case "DELETE":
-                response = session().delete(endpoint, options);
+                response = requestSession.delete(uri, options);
                 break;
-
             default:
-                throw new IllegalArgumentException(
-                        "Unsupported method: " + method
-                );
+                throw new IllegalArgumentException("Unsupported method: " + method);
         }
 
-        // Store the last API response
-        lastStatus.set(response.status());
-        lastBody.set(response.text());
-
+        // the body can be read only once, so keep it here for everyone to use
+        lastStatus = response.status();
+        lastBody = response.text();
         return response;
     }
 
     // ---------- last response ----------
-
-    public static String lastBody() {
-        return lastBody.get();
+    public String lastBody() {
+        return lastBody;
     }
 
-    public static int lastStatus() {
-        return lastStatus.get();
+    public int lastStatus() {
+        return lastStatus;
     }
 
-    public static <T> T readBody(Class<T> type) {
-        return GSON.fromJson(lastBody.get(), type);
+    public <T> T readBody(Class<T> type) {
+        return gson.fromJson(lastBody, type);
     }
 
     // ---------- values shared between steps ----------
-
-    public static void store(String key, Object value) {
-
-        if (stored.get() == null) {
-            stored.set(new HashMap<String, Object>());
-        }
-
-        stored.get().put(key, value);
+    public void store(String key, Object value) {
+        stored.put(key, value);
     }
 
-    public static <T> T stored(String key, Class<T> type) {
-
-        if (stored.get() == null
-                || !stored.get().containsKey(key)) {
-
-            throw new IllegalStateException(
-                    "Nothing was stored under the key: " + key
-            );
+    public <T> T stored(String key, Class<T> type) {
+        if (!stored.containsKey(key)) {
+            throw new IllegalStateException("Nothing was stored under the key: " + key);
         }
-
-        return type.cast(stored.get().get(key));
+        return type.cast(stored.get(key));
     }
 
     // ---------- cleanup ----------
-
-    public static void close() {
-
-        if (session.get() != null) {
-            session.get().dispose();
-            session.remove();
+    public void close() {
+        if (session != null) {
+            session.dispose();
+            session = null;
         }
-
-        if (playwright.get() != null) {
-            playwright.get().close();
-            playwright.remove();
+        if (playwright != null) {
+            playwright.close();
+            playwright = null;
         }
-
-        headers.remove();
-        stored.remove();
-        lastBody.remove();
-        lastStatus.remove();
+        headers.clear();
+        stored.clear();
+        lastBody = null;
+        lastStatus = 0;
     }
 }

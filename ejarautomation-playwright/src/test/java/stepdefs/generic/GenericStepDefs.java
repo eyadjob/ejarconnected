@@ -1,5 +1,6 @@
 package stepdefs.generic;
 
+import automation.framework.ApiAutomation.ApiClient;
 import automation.framework.ApiAutomation.VehicleOperationsApi;
 import automation.framework.Element;
 import automation.framework.ScenarioContextSingleton;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import io.cucumber.java.After;
 
 import static automation.framework.Element.waitForLoadingIconToBeNotPresentStatic;
 
@@ -28,7 +30,8 @@ public class GenericStepDefs extends GenericPage {
 
     ThreadLocal<String> formName = new ThreadLocal<>();
     EjarPages ejarPages = new EjarPages();
-
+    ApiClient apiClient = new ApiClient();
+    VehicleOperationsApi vehicleOperationsApi = new VehicleOperationsApi(apiClient);
     @Given("^ejar login and open url with user name: (.*) and password: (.*) url: (.*)$")
     public void LoginWithUsernameAndPassword(String username, String password, String url) {
         PropManager.getInstance().getPropertiesValues().get("appProperties.properties").put("execution.project.name", "ejar web");
@@ -881,7 +884,12 @@ public void checkPageRequestsContains(String expectedUrlText, String assertionTy
 
     @And("^using API create a new vehicle with random plate and chassis numbers$")
     public void createVehicleUsingAPI() {
-        VehicleOperationsApi.createVehicleWithRandomData();
+        vehicleOperationsApi.createVehicleWithRandomData();
     }
+
+    @After("@API")
+        public void closeApiSession() {
+        apiClient.close();
+  }
 
 }

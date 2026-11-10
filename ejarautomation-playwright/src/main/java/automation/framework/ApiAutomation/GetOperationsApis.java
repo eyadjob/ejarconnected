@@ -1,59 +1,52 @@
 package automation.framework.ApiAutomation;
+
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class GetOperationsApis {
-    private static final String GET_BRANCHES =
-            "api/services/app/Branch/GetAllBranches?branchTypeId=8900&allActive=false";
 
-    public static String getBranchId(String branchName) {
+    private final ApiClient apiClient;
+    private final AuthenticationOperationsApi authenticationApi;
+
+    public GetOperationsApis(ApiClient apiClient) {
+        this.apiClient = apiClient;
+        this.authenticationApi = new AuthenticationOperationsApi(apiClient);
+    }
+
+    public String getBranchId(String branchName) {
+        authenticationApi.ensureLoggedIn();
 
         // Execute GET API
-        ApiClient.get(GET_BRANCHES);
+        apiClient.get(ApiUris.GET_ALL_BRANCHES_URI);
 
         // Assert HTTP status
-        if (ApiClient.lastStatus() != 200) {
-            throw new AssertionError(
-                    "GET Branches failed. Status: "
-                            + ApiClient.lastStatus()
-                            + ", Response: " + ApiClient.lastBody()
-            );
+        if (apiClient.lastStatus() != 200) {
+            throw new AssertionError("GET Branches failed. Status: " + apiClient.lastStatus()
+                    + ", Response: " + apiClient.lastBody());
         }
 
         // Parse JSON response
-        JsonObject response = JsonParser.parseString(
-                ApiClient.lastBody()).getAsJsonObject();
+        JsonObject response = JsonParser.parseString(apiClient.lastBody()).getAsJsonObject();
 
         // Assert API success
         if (!response.get("success").getAsBoolean()) {
-            throw new AssertionError(
-                    "GET Branches returned success=false: "
-                            + ApiClient.lastBody()
-            );
+            throw new AssertionError("GET Branches returned success=false: " + apiClient.lastBody());
         }
 
         // Get result.items array
-        JsonArray branches = response
-                .getAsJsonObject("result")
-                .getAsJsonArray("items");
+        JsonArray branches = response.getAsJsonObject("result").getAsJsonArray("items");
 
         // Find branch by name
-        for (var element : branches) {
-
+        for (JsonElement element : branches) {
             JsonObject branch = element.getAsJsonObject();
 
-            if (branch.get("name").getAsString()
-                    .trim().equalsIgnoreCase(branchName.trim())) {
-
-
-
+            if (branch.get("name").getAsString().trim().equalsIgnoreCase(branchName.trim())) {
                 return branch.get("id").getAsString();
             }
         }
 
-        throw new AssertionError(
-                "Branch not found: " + branchName
-        );
+        throw new AssertionError("Branch not found: " + branchName);
     }
 }

@@ -1,17 +1,17 @@
 package automation.framework.ApiAutomation;
 
+import automation.framework.ApiAutomation.beans.VehicleRecords.*;
+import automation.framework.business.StringHelper;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import automation.framework.business.StringHelper;
 
 public class VehicleOperationsApi {
 
-    // ---------- endpoint (relative to api.base.url) ----------
-    private static final String CREATE_VEHICLES = "api/services/app/Vehicle/CreateVehicles";
-
     // ---------- fixed values from your JMeter request ----------
+    private static final String BRANCH_NAME = "Automation Branch";
     private static final String ODOMETER = "22";
     private static final int FUEL_ID = 208;
     private static final String COUNTRY_ID = "1";
@@ -32,52 +32,20 @@ public class VehicleOperationsApi {
 
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    // ---------- request: every JSON key of CreateVehicles ----------
-    public record CreateVehiclesRequest(List<VehicleDto> vehicleDtos) {
+    private final ApiClient apiClient;
+    private final AuthenticationOperationsApi authenticationApi;
+    private final GetOperationsApis getApis;
+
+    public VehicleOperationsApi(ApiClient apiClient) {
+        this.apiClient = apiClient;
+        this.authenticationApi = new AuthenticationOperationsApi(apiClient);
+        this.getApis = new GetOperationsApis(apiClient);
     }
 
-    public record VehicleDto(
-            Boolean isBulkUploaded,
-            String odometer,
-            int fuelId,
-            String branchId,
-            VehicleManufacturingInfo vehicleManufacturingInfo,
-            VehicleLicenseInfo vehicleLicenseInfo,
-            VehicleInsuranceInfo vehicleInsuranceInfo,
-            LocationInfo locationInfo,
-            PurchaseInfo purchaseInfo,
-            Specs specs,
-            String countryId) {
-    }
+    public Vehicle createVehicleWithRandomData() {
+        authenticationApi.ensureLoggedIn();
 
-    public record VehicleManufacturingInfo(String modelId, int year, String chassisNo) {
-    }
-
-    public record VehicleLicenseInfo(String licenseTypeId, String usageTypeId, String plateNo) {
-    }
-
-    public record VehicleInsuranceInfo(String expiryDate, String number,
-                                       String insuranceCompanyId, int accidentPolicyId) {
-    }
-
-    public record LocationInfo(String currentLocationId) {
-    }
-
-    public record PurchaseInfo(String vendorId, String date, String price) {
-    }
-
-    public record Specs(String colorId, String trimLevelId, String fuelTypeId,
-                        int fuelTankSize, int engineSize) {
-    }
-
-    // ---------- the vehicle we created (the API returns no id, so these are the values we sent) ----------
-    public record Vehicle(String plateNo, String chassisNo, String branchId,
-                          String modelId, int year, String rawResponse) {
-    }
-
-    // ---------- the API call ----------
-    public static Vehicle createVehicleWithRandomData() {
-        String branchId = GetOperationsApis.getBranchId("Automation Branch");
+        String branchId = getApis.getBranchId(BRANCH_NAME);
         String plateNo = StringHelper.getRandomPlateNumber("saudi");
         String chassisNo = StringHelper.getRandomNumberOfSize(17);
         String insuranceNumber = StringHelper.getRandomNumberOfSize(10);
@@ -96,22 +64,26 @@ public class VehicleOperationsApi {
                 new Specs(COLOR_ID, TRIM_LEVEL_ID, FUEL_TYPE_ID, FUEL_TANK_SIZE, ENGINE_SIZE),
                 COUNTRY_ID);
 
-        List<VehicleDto> dtos = new ArrayList<>();
+        List<VehicleDto> dtos = new ArrayList<VehicleDto>();
         dtos.add(dto);
 
-        ApiClient.post(CREATE_VEHICLES, new CreateVehiclesRequest(dtos));
-        if (ApiClient.lastStatus() != 200) {
-            throw new AssertionError(
-                    "Create Vehicle API failed! Expected status: 200"
-                            + ", Actual status: " + ApiClient.lastStatus()
-                            + ", Response: " + ApiClient.lastBody()
-            );
+        apiClient.post(ApiUris.CREATE_VEHICLES_URI, new CreateVehiclesRequest(dtos));
+        if (apiClient.lastStatus() != 200) {
+            throw new AssertionError("Create Vehicle API failed! Expected status: 200"
+                    + ", Actual status: " + apiClient.lastStatus()
+                    + ", Response: " + apiClient.lastBody());
         }
-        System.out.println("CreateVehicles status: " + ApiClient.lastStatus());
 
-        Vehicle vehicle = new Vehicle(plateNo, chassisNo, branchId, MODEL_ID, YEAR, ApiClient.lastBody());
-        ApiClient.store("vehicle", vehicle);
-        System.out.println("Vehicle created through API Plate NO: " + vehicle.plateNo);
+        CreateVehiclesResponse response = apiClient.readBody(CreateVehiclesResponse.class);
+        if (response == null || !response.success()) {
+            throw new AssertionError("Create Vehicle API returned success=false. Response: "
+                    + apiClient.lastBody());
+        }
+        System.out.println("CreateVehicles status: " + apiClient.lastStatus());
+
+        Vehicle vehicle = new Vehicle(plateNo, chassisNo, branchId, MODEL_ID, YEAR, apiClient.lastBody());
+        apiClient.store("vehicle", vehicle);
+        System.out.println("Vehicle created through API Plate NO: " + vehicle.plateNo());
         return vehicle;
     }
 }
