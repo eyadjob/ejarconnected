@@ -12,7 +12,7 @@ Feature: Yelo login page verified with the Playwright MCP browser
       """
       - Rentey wordmark in the top-right corner
       - Yellow "YELO بيلو" tenant logo centred above the login form
-      - no Label present"User name or email" with an empty text input below it
+      - the Label must NOT be visible "User name or email" with an empty text input below it
       - Label "Password" with a masked input and an eye toggle icon
       - Salmon / light-orange "Log in" button below the password field
       - Four small language flag icons underneath the button

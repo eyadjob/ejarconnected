@@ -54,20 +54,61 @@ public class DeepSeekVisionValidator {
 
     private static final String SYSTEM_PROMPT =
             "You are a meticulous UI verification assistant for an automated test suite. "
-            + "You compare a screenshot of a web page with a checklist written by a tester and decide "
-            + "whether the page matches. Be strict about the checklist items, but ignore harmless "
-            + "differences such as anti-aliasing, exact pixel positions, or font rendering. "
-            + "Answer with json only, no prose.";
+            + "You compare a screenshot of a web page with a checklist written by a tester. "
+            + "Judge EVERY checklist line independently and return one entry per line, in the same order. "
+            + "Be strict about the checklist items, but ignore harmless differences such as anti-aliasing, "
+            + "exact pixel positions, or font rendering. "
+            + "If a line is ambiguous, self-contradictory, or cannot be verified from the screenshot alone, "
+            + "mark that line NOT satisfied (ok=false) and explain why \u2014 never resolve ambiguity in the "
+            + "page's favour. Answer with json only, no prose.";
+
+    /** One checklist line and the model's verdict for it. */
+    public static class Item {
+        private final String text;
+        private final boolean ok;
+        private final String evidence;
+
+        Item(String text, boolean ok, String evidence) {
+            this.text = text;
+            this.ok = ok;
+            this.evidence = evidence;
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public boolean isOk() {
+            return ok;
+        }
+
+        public String getEvidence() {
+            return evidence;
+        }
+
+        @Override
+        public String toString() {
+            return (ok ? "OK   " : "FAIL ") + text
+                    + (evidence == null || evidence.isEmpty() ? "" : " (" + evidence + ")");
+        }
+    }
 
     /** The model's judgement. */
     public static class Verdict {
         private final boolean pass;
         private final double confidence;
+        private final List<Item> items;
         private final List<String> findings;
         private final String rawResponse;
 
-        Verdict(boolean pass, double confidence, List<String> findings, String rawResponse) {
-            this.pass = pass;
+        Verdict(boolean modelPass, double confidence, List<Item> items,
+                List<String> findings, String rawResponse) {
+            this.items = items == null ? Collections.emptyList() : items;
+            // The model's own "pass" is only used when it returned no per-item verdicts: one failed
+            // or ambiguous line must fail the whole run, regardless of the model's summary boolean.
+            this.pass = this.items.isEmpty()
+                    ? modelPass
+                    : this.items.stream().allMatch(Item::isOk);
             this.confidence = confidence;
             this.findings = findings == null ? Collections.emptyList() : findings;
             this.rawResponse = rawResponse;
@@ -81,6 +122,10 @@ public class DeepSeekVisionValidator {
             return confidence;
         }
 
+        public List<Item> getItems() {
+            return items;
+        }
+
         public List<String> getFindings() {
             return findings;
         }
@@ -91,7 +136,15 @@ public class DeepSeekVisionValidator {
 
         @Override
         public String toString() {
-            return "pass=" + pass + ", confidence=" + confidence + ", findings=" + findings;
+            List<Item> failed = new ArrayList<>();
+            for (Item item : items) {
+                if (!item.isOk()) {
+                    failed.add(item);
+                }
+            }
+            return "pass=" + pass + ", confidence=" + confidence
+                    + (items.isEmpty() ? "" : ", failedItems=" + failed)
+                    + ", findings=" + findings;
         }
     }
 
@@ -140,7 +193,7 @@ public class DeepSeekVisionValidator {
             String content = extractContent(response.body());
             if (content == null || content.trim().isEmpty()) {
                 // JSON mode replaces unparseable output with spaces; retry once.
-                lastProblem = "empty content (finish_reason may be length)";
+                lastProblem = "empty content (finish_reason=" + extractFinishReason(response.body()) + ")";
                 continue;
             }
             Verdict verdict = parseVerdict(content);
@@ -158,10 +211,12 @@ public class DeepSeekVisionValidator {
                 "Requirement: " + requirement + "\n\n"
                 + "Checklist (every item must hold):\n" + checklist + "\n\n"
                 + "Return json exactly in this shape:\n"
-                + "{\"pass\": true, \"confidence\": 0.95, \"findings\": [\"short note\"]}\n"
-                + "Set \"pass\" to false if any item is missing or clearly different. "
-                + "Use \"findings\" for anything missing, different, or worth a human's attention, "
-                + "and leave it as an empty array when everything matches.";
+                + "{\"items\": [{\"item\": \"<checklist line>\", \"ok\": true}], "
+                + "\"pass\": true, \"confidence\": 0.95, \"findings\": []}\n"
+                + "Provide exactly one items entry per checklist line, in the same order, "
+                + "using the line text unchanged. Do not add any other keys, and keep every string under 20 words. "
+                + "Set ok=false when a line is not satisfied, is ambiguous, or cannot be verified from the screenshot; "
+                + "put a one-line reason in findings for each failing line and leave findings empty when all pass.";
 
         JsonObject textPart = new JsonObject();
         textPart.addProperty("type", "text");
@@ -198,7 +253,7 @@ public class DeepSeekVisionValidator {
         body.add("messages", messages);
         body.add("response_format", responseFormat);
         body.addProperty("temperature", 0);
-        body.addProperty("max_tokens", 800);
+        body.addProperty("max_tokens", 2000);
         body.addProperty("stream", false);
         // The key travels in the header only; it is never echoed into logs.
         return body.toString();
@@ -218,6 +273,21 @@ public class DeepSeekVisionValidator {
                 ? message.get("content").getAsString() : null;
     }
 
+    /** Reason the model stopped, e.g. {@code stop} or {@code length}; helps explain an empty verdict. */
+    private static String extractFinishReason(String responseBody) {
+        try {
+            JsonObject root = JsonParser.parseString(responseBody).getAsJsonObject();
+            if (!root.has("choices") || root.getAsJsonArray("choices").size() == 0) {
+                return "no-choices";
+            }
+            JsonObject choice = root.getAsJsonArray("choices").get(0).getAsJsonObject();
+            return choice.has("finish_reason") && !choice.get("finish_reason").isJsonNull()
+                    ? choice.get("finish_reason").getAsString() : "unknown";
+        } catch (RuntimeException e) {
+            return "unparseable-response";
+        }
+    }
+
     private static Verdict parseVerdict(String content) {
         try {
             String json = content.trim();
@@ -228,9 +298,26 @@ public class DeepSeekVisionValidator {
             }
             JsonObject verdict = JsonParser.parseString(json.substring(start, end + 1)).getAsJsonObject();
 
-            boolean pass = verdict.has("pass") && verdict.get("pass").getAsBoolean();
+            boolean modelPass = verdict.has("pass") && verdict.get("pass").getAsBoolean();
             double confidence = verdict.has("confidence") && verdict.get("confidence").isJsonPrimitive()
                     ? verdict.get("confidence").getAsDouble() : 0.0;
+
+            List<Item> items = new ArrayList<>();
+            if (verdict.has("items") && verdict.get("items").isJsonArray()) {
+                for (JsonElement element : verdict.getAsJsonArray("items")) {
+                    if (!element.isJsonObject()) {
+                        continue;
+                    }
+                    JsonObject item = element.getAsJsonObject();
+                    String text = item.has("item") && !item.get("item").isJsonNull()
+                            ? item.get("item").getAsString() : "";
+                    boolean ok = item.has("ok") && item.get("ok").isJsonPrimitive()
+                            && item.get("ok").getAsBoolean();
+                    String evidence = item.has("evidence") && !item.get("evidence").isJsonNull()
+                            ? item.get("evidence").getAsString() : "";
+                    items.add(new Item(text, ok, evidence));
+                }
+            }
 
             List<String> findings = new ArrayList<>();
             if (verdict.has("findings") && verdict.get("findings").isJsonArray()) {
@@ -238,7 +325,7 @@ public class DeepSeekVisionValidator {
                     findings.add(finding.isJsonPrimitive() ? finding.getAsString() : finding.toString());
                 }
             }
-            return new Verdict(pass, confidence, findings, content.trim());
+            return new Verdict(modelPass, confidence, items, findings, content.trim());
         } catch (RuntimeException malformed) {
             return null;
         }
