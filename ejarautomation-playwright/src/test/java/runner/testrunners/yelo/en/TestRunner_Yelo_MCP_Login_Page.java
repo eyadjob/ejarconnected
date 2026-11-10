@@ -23,7 +23,7 @@ public class TestRunner_Yelo_MCP_Login_Page {
         byte status = Main.run(new String[]{
                 "src/test/resources/feature/yelo/AI MCP/",
                 "--glue", "stepdefs.mcp",
-                "--plugin", "pretty",
+                "--plugin", "automation.framework.listener.StepTimingFormatter",
                 "--monochrome"
         }, Thread.currentThread().getContextClassLoader());
 

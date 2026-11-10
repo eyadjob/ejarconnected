@@ -30,7 +30,8 @@ import java.util.List;
  * <p>The API key is resolved from, in order:</p>
  * <ol>
  *   <li>the {@code DEEPSEEK_API_KEY} environment variable,</li>
- *   <li>the file named by {@code -Ddeepseek.key.file} (default {@code AI Agent Credentials/deepseek.key.txt}).</li>
+ *   <li>the file named by {@code -Ddeepseek.key.file},</li>
+ *   <li>{@code AI Agent Credentials/deepseek.key}, then {@code AI Agent Credentials/deepseek.key.txt}.</li>
  * </ol>
  *
  * <p>Overridable system properties: {@code deepseek.api.url}, {@code deepseek.model},
@@ -42,7 +43,14 @@ public class DeepSeekVisionValidator {
 
     private static final String DEFAULT_ENDPOINT = "https://api.deepseek.com/chat/completions";
     private static final String DEFAULT_MODEL = "deepseek-flash";
-    private static final String DEFAULT_KEY_FILE = "AI Agent Credentials/deepseek.key.txt";
+    /**
+     * Untracked key files, tried in order. The bare name is preferred, the {@code .txt} variant is kept
+     * so a renamed file does not silently break the run.
+     */
+    private static final String[] DEFAULT_KEY_FILES = {
+            "AI Agent Credentials/deepseek.key",
+            "AI Agent Credentials/deepseek.key.txt"
+    };
 
     private static final String SYSTEM_PROMPT =
             "You are a meticulous UI verification assistant for an automated test suite. "
@@ -242,21 +250,32 @@ public class DeepSeekVisionValidator {
         if (fromEnv != null && !fromEnv.trim().isEmpty()) {
             return fromEnv.trim();
         }
-        String keyFile = System.getProperty("deepseek.key.file", DEFAULT_KEY_FILE);
-        Path path = Paths.get(keyFile);
-        if (!Files.isRegularFile(path)) {
-            throw new IllegalStateException("No DeepSeek API key found. Set " + API_KEY_ENV
-                    + " or put the key in '" + path.toAbsolutePath() + "'.");
-        }
-        try {
-            String key = new String(Files.readAllBytes(path), StandardCharsets.UTF_8).trim();
-            if (key.isEmpty()) {
-                throw new IllegalStateException("DeepSeek key file is empty: " + path.toAbsolutePath());
+
+        String explicit = System.getProperty("deepseek.key.file");
+        List<Path> candidates = new ArrayList<>();
+        if (explicit != null && !explicit.trim().isEmpty()) {
+            candidates.add(Paths.get(explicit.trim()));
+        } else {
+            for (String name : DEFAULT_KEY_FILES) {
+                candidates.add(Paths.get(name));
             }
-            return key;
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not read DeepSeek key file: " + path.toAbsolutePath(), e);
         }
+
+        for (Path path : candidates) {
+            if (!Files.isRegularFile(path)) {
+                continue;
+            }
+            try {
+                String key = new String(Files.readAllBytes(path), StandardCharsets.UTF_8).trim();
+                if (!key.isEmpty()) {
+                    return key;
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException("Could not read DeepSeek key file: " + path.toAbsolutePath(), e);
+            }
+        }
+        throw new IllegalStateException("No DeepSeek API key found. Set " + API_KEY_ENV
+                + " or put the key in one of: " + candidates);
     }
 
     private static String abbreviate(String text) {
