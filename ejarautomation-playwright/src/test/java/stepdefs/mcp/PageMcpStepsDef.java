@@ -156,8 +156,8 @@ public class PageMcpStepsDef {
     @Then("^the Playwright MCP browser saves a screenshot named \"(.*)\"$")
     public void saveScreenshot(String fileName) throws IOException {
         requireClient();
-        String response = mcp.screenshot(MCP_OUTPUT_DIR + fileName);
-        System.out.println("MCP screenshot: " + MCP_OUTPUT_DIR + fileName + " -> " + response);
+        mcp.screenshot(MCP_OUTPUT_DIR + fileName);
+        System.out.println("Screenshot saved: " + MCP_OUTPUT_DIR + fileName);
     }
 
     @Then("^the Playwright MCP browser is closed$")
