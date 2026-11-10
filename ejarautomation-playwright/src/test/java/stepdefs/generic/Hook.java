@@ -15,6 +15,8 @@ import java.util.Date;
 import automation.framework.business.ScreenShotHandler;
 import automation.framework.listener.DateHelper;
 import automation.framework.listener.RunnerListener;
+import automation.framework.listener.StepTimingFormatter;
+import automation.framework.listener.StepTimingSupport;
 import automation.framework.propmanager.PropManager;
 import automation.framework.threadData.DriverFactory;
 import automation.framework.threadData.SharedMethods;
@@ -27,6 +29,7 @@ import com.aventstack.extentreports.model.Test;
 import io.cucumber.java.After;
 import io.cucumber.java.AfterStep;
 import io.cucumber.java.Before;
+import io.cucumber.java.BeforeStep;
 import io.cucumber.java.Scenario;
 import stepdefs.ejar.web.EjarPages;
 
@@ -218,8 +221,22 @@ public class Hook {
     }
 
 
+    /** Nanotime captured by {@code @BeforeStep}; absent means no step is in flight on this thread. */
+    private static final ThreadLocal<Long> STEP_START_NANOS = new ThreadLocal<>();
+    /** 1-based step counter for the current scenario, used when no step name can be resolved. */
+    private static final ThreadLocal<Integer> STEP_INDEX = new ThreadLocal<>();
+
+    @BeforeStep
+    public static void beforeStep(Scenario scenario) {
+        STEP_START_NANOS.set(System.nanoTime());
+        Integer previous = STEP_INDEX.get();
+        STEP_INDEX.set(previous == null ? 1 : previous + 1);
+        StepTimingSupport.clearLabel();
+    }
+
     @AfterStep
     public static void afterStep(Scenario scenario) {
+        printStepTiming();
         try {
             new Element("ejar.waitingicon.byxpath").waitForElementNotVisible();
         } catch (AssertionError e) {
@@ -235,6 +252,54 @@ public class Hook {
         } catch (Throwable t) {
             System.out.println("AfterStep: report/screenshot logic skipped (do not fail scenario): " + t.getMessage());
             t.printStackTrace();
+        }
+    }
+
+    /**
+     * Prints {@code <step text>\t<milliseconds> ms} after every step, matching the layout produced by
+     * {@link StepTimingFormatter} and by the AI/MCP steps.
+     *
+     * <p>Silent when {@code StepTimingFormatter} is registered for the run (Maven / runner class),
+     * because it already prints the timings. This hook covers IDE runs that start a {@code .feature}
+     * file directly: IntelliJ then ignores the plugins declared in {@code @CucumberOptions}, so the
+     * formatter never loads and the console used to show no timings at all.</p>
+     */
+    private static void printStepTiming() {
+        if (StepTimingFormatter.isActive()) {
+            return;
+        }
+        Long startNanos = STEP_START_NANOS.get();
+        if (startNanos == null) {
+            return;
+        }
+        long millis = (System.nanoTime() - startNanos) / 1_000_000L;
+
+        String label = StepTimingSupport.getLabel();
+        if (label == null || label.isBlank()) {
+            label = currentExtentStepName();
+        }
+        if (label == null || label.isBlank()) {
+            Integer index = STEP_INDEX.get();
+            label = "step " + (index == null ? 1 : index);
+        }
+        System.out.println("    " + maskPasswords(label) + "\t" + millis + " ms");
+    }
+
+    /** Last step Extent recorded for this thread, or {@code null} when Extent is not attached to this run. */
+    private static String currentExtentStepName() {
+        try {
+            ExtentTest currentStep = ExtentCucumberAdapter.getCurrentStep();
+            if (currentStep == null) {
+                return null;
+            }
+            List<Test> steps = stepsListForCurrentScenario(currentStep);
+            if (steps.isEmpty()) {
+                return null;
+            }
+            Test lastStep = steps.get(steps.size() - 1);
+            return lastStep == null ? null : lastStep.getName();
+        } catch (Throwable ignored) {
+            return null;
         }
     }
 
@@ -275,6 +340,8 @@ public class Hook {
     @Before
     public void startVideoRecording(Scenario scenario) throws IOException {
         System.out.println("hook before scenaior");
+        STEP_INDEX.remove();
+        STEP_START_NANOS.remove();
         fillSharedMethodsWithCurrentScenarioInfo(scenario);
         FileHandler.deleteFilesInPath(TestData.getInstance().getThreadSharedMethods().get().getImagesTempFolder());
         if (isRecordVideoEnabled()) {
