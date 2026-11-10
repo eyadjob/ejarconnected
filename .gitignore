@@ -14,3 +14,7 @@ ejarautomation-playwright/.idea/
 # written by the MCP browser during a run (McpPlaywrightClient / the 'AI MCP' feature).
 **/playwright-mcp/
 **/.playwright-mcp/
+
+# AI Agent credentials - DeepSeek API key used by the AI validation steps.
+# Never commit; DeepSeekVisionValidator reads it at runtime.
+**/AI Agent Credentials/

@@ -1,5 +1,6 @@
 package stepdefs.mcp;
 
+import automation.framework.ai.DeepSeekVisionValidator;
 import automation.framework.mcp.McpPlaywrightClient;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -11,6 +12,8 @@ import io.cucumber.java.en.When;
 import org.junit.Assert;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +27,16 @@ import java.util.Map;
 public class PageMcpStepsDef {
 
     private static final String MCP_OUTPUT_DIR = "test output/playwright-mcp/";
+    private static final String DEEPSEEK_SCREENSHOT = "deepseek-verification.png";
     private static final Gson GSON = new Gson();
+
+    /** Used only when the DeepSeek step is written without a docstring checklist. */
+    private static final String DEFAULT_LOGIN_CHECKLIST =
+            "- Rentey wordmark in the top-right corner\n"
+            + "- Yellow YELO tenant logo above the login form\n"
+            + "- Labels 'User name or email' and 'Password' with their inputs\n"
+            + "- A 'Log in' button below the password field\n"
+            + "- Footer mentioning Qoad Software Solutions and Rentey";
 
     private McpPlaywrightClient mcp;
 
@@ -117,6 +129,28 @@ public class PageMcpStepsDef {
                 bodyText.contains("based on correct information"));
         Assert.assertTrue("Notice text 'Customer Service Team' is missing",
                 bodyText.contains("Customer Service Team"));
+    }
+
+    /**
+     * LLM-as-judge step: captures the page through the MCP browser, sends the screenshot plus the
+     * checklist (the feature's docstring) to DeepSeek, and asserts on the model's JSON verdict.
+     */
+    @Then("^DeepSeek confirms the page matches the Yelo login design$")
+    public void deepSeekConfirmsThePage(String checklist) throws Exception {
+        requireClient();
+        String screenshotPath = MCP_OUTPUT_DIR + DEEPSEEK_SCREENSHOT;
+        // Evidence comes from the same MCP browser the previous steps used.
+        mcp.screenshot(screenshotPath);
+        byte[] png = Files.readAllBytes(Paths.get(screenshotPath));
+
+        String review = (checklist == null || checklist.trim().isEmpty()) ? DEFAULT_LOGIN_CHECKLIST : checklist.trim();
+        DeepSeekVisionValidator.Verdict verdict = new DeepSeekVisionValidator()
+                .validate(png, "Yelo login page at https://ejarypp.qoad.com:4800/", review);
+
+        System.out.println("DeepSeek verdict: " + verdict);
+        Assert.assertTrue("DeepSeek did not confirm the login page design (" + verdict
+                        + "). Findings: " + verdict.getFindings(),
+                verdict.isPass());
     }
 
     @Then("^the Playwright MCP browser saves a screenshot named \"(.*)\"$")
