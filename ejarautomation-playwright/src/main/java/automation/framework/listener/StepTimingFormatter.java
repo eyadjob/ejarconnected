@@ -28,10 +28,19 @@ public class StepTimingFormatter implements EventListener {
 
     private static final String TAB = "\t";
 
+    /** Set as soon as Cucumber instantiates this plugin; step definitions use it to avoid double printing. */
+    private static volatile boolean active;
+
     private String currentScenario = "";
+
+    /** True when this formatter is registered for the current run (Maven/runner, not plain IDE runs). */
+    public static boolean isActive() {
+        return active;
+    }
 
     @Override
     public void setEventPublisher(EventPublisher publisher) {
+        active = true;
         publisher.registerHandlerFor(TestCaseStarted.class, this::onTestCaseStarted);
         publisher.registerHandlerFor(TestStepFinished.class, this::onStepFinished);
         publisher.registerHandlerFor(TestCaseFinished.class, this::onTestCaseFinished);

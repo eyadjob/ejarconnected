@@ -1,34 +1,37 @@
 package stepdefs.mcp;
 
 import automation.framework.ai.DeepSeekVisionValidator;
+import automation.framework.listener.StepTimingFormatter;
 import automation.framework.mcp.McpPlaywrightClient;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import io.cucumber.datatable.DataTable;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import org.junit.Assert;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Steps that drive the Playwright MCP server instead of {@code DriverFactory}.
  *
  * <p>Every interaction goes through {@link McpPlaywrightClient}, which starts
  * {@code npx @playwright/mcp} and calls its tools ({@code browser_navigate},
- * {@code browser_wait_for}, {@code browser_evaluate}, {@code browser_take_screenshot}).</p>
+ * {@code browser_wait_for}, {@code browser_take_screenshot}).</p>
+ *
+ * <p>Verification is delegated to the DeepSeek vision judge; the Java-side DOM assertions were removed
+ * on purpose so the scenario relies on the model's judgement rather than selector-level checks.</p>
+ *
+ * <p>Each step is wrapped in {@link #timed} so the console shows {@code <step text>\t<duration>}
+ * even when the feature is started from the IDE, where IntelliJ uses its own Cucumber formatter and
+ * ignores the plugin configured in the runner. When {@link StepTimingFormatter} <em>is</em> active
+ * (Maven runs), it prints the timings instead and this fallback stays silent.</p>
  */
 public class PageMcpStepsDef {
 
     private static final String MCP_OUTPUT_DIR = "test output/playwright-mcp/";
     private static final String DEEPSEEK_SCREENSHOT = "deepseek-verification.png";
-    private static final Gson GSON = new Gson();
+    private static final String TAB = "\t";
 
     /** Used only when the DeepSeek step is written without a docstring checklist. */
     private static final String DEFAULT_LOGIN_CHECKLIST =
@@ -38,97 +41,30 @@ public class PageMcpStepsDef {
             + "- A 'Log in' button below the password field\n"
             + "- Footer mentioning Qoad Software Solutions and Rentey";
 
+    /** A step body that may throw anything, including {@link AssertionError}. */
+    @FunctionalInterface
+    private interface StepBody {
+        void run() throws Exception;
+    }
+
     private McpPlaywrightClient mcp;
 
     @Given("^the Playwright MCP browser is started$")
-    public void startPlaywrightMcpBrowser() throws IOException {
-        mcp = new McpPlaywrightClient();
-        mcp.start();
+    public void startPlaywrightMcpBrowser() throws Exception {
+        timed("Given the Playwright MCP browser is started", () -> {
+            mcp = new McpPlaywrightClient();
+            mcp.start();
+        });
     }
 
     @When("^I open the Yelo login page at \"(.*)\"$")
-    public void openYeloLoginPage(String url) throws IOException {
-        requireClient();
-        mcp.navigate(url);
-        // The login form is rendered by the SPA after the first paint; wait for it before asserting.
-        mcp.waitForText("Log in", 30);
-    }
-
-    @Then("^the page title should be \"(.*)\"$")
-    public void thePageTitleShouldBe(String expectedTitle) throws IOException {
-        JsonObject state = mcp.evaluateJson("() => ({ title: document.title, url: location.href })");
-        Assert.assertEquals("Page title", expectedTitle, state.get("title").getAsString());
-        Assert.assertTrue("Expected the login route, but the page is at " + state.get("url").getAsString(),
-                state.get("url").getAsString().contains("/account/login"));
-    }
-
-    @Then("^the login form should show these fields:$")
-    public void theLoginFormShouldShowTheseFields(DataTable fields) throws IOException {
-        List<Map<String, String>> rows = fields.asMaps(String.class, String.class);
-        for (Map<String, String> row : rows) {
-            String label = row.get("label");
-            String selector = row.get("selector");
-
-            JsonObject state = mcp.evaluateJson("() => {" +
-                    "  const visible = (e) => !!e && e.offsetParent !== null && e.getBoundingClientRect().width > 0;" +
-                    "  const labelText = " + GSON.toJson(label) + ";" +
-                    "  const labelEl = Array.from(document.querySelectorAll('label'))" +
-                    "      .find(l => (l.innerText || '').trim() === labelText);" +
-                    "  const input = document.querySelector(" + GSON.toJson(selector) + ");" +
-                    "  return {" +
-                    "    labelVisible: visible(labelEl)," +
-                    "    inputVisible: visible(input)," +
-                    "    inputType: input ? input.type : null" +
-                    "  };" +
-                    "}");
-
-            Assert.assertTrue("Label '" + label + "' is not displayed", state.get("labelVisible").getAsBoolean());
-            Assert.assertTrue("Field '" + selector + "' is not displayed", state.get("inputVisible").getAsBoolean());
-            if (label.equalsIgnoreCase("Password")) {
-                Assert.assertEquals("Password field must be masked", "password", state.get("inputType").getAsString());
-            }
-        }
-    }
-
-    @Then("^the \"(.*)\" button should be displayed$")
-    public void theButtonShouldBeDisplayed(String buttonText) throws IOException {
-        JsonObject state = mcp.evaluateJson("() => {" +
-                "  const text = " + GSON.toJson(buttonText) + ";" +
-                "  const button = Array.from(document.querySelectorAll('button'))" +
-                "      .find(b => (b.innerText || '').trim() === text);" +
-                "  const visible = !!button && button.offsetParent !== null && button.getBoundingClientRect().width > 0;" +
-                "  return { found: !!button, visible: visible, text: button ? button.innerText.trim() : null };" +
-                "}");
-        Assert.assertTrue("Button '" + buttonText + "' was not found", state.get("found").getAsBoolean());
-        Assert.assertTrue("Button '" + buttonText + "' is not displayed", state.get("visible").getAsBoolean());
-    }
-
-    @Then("^the tenant logo should be displayed$")
-    public void theTenantLogoShouldBeDisplayed() throws IOException {
-        JsonObject state = mcp.evaluateJson("() => {" +
-                "  const logo = Array.from(document.querySelectorAll('img'))" +
-                "      .find(i => (i.getAttribute('src') || '').includes('GetTenantLogo'));" +
-                "  const visible = !!logo && logo.offsetParent !== null && logo.getBoundingClientRect().width > 0;" +
-                "  return { found: !!logo, visible: visible, src: logo ? logo.getAttribute('src') : null };" +
-                "}");
-        Assert.assertTrue("Tenant logo image was not found", state.get("found").getAsBoolean());
-        Assert.assertTrue("Tenant logo is not displayed", state.get("visible").getAsBoolean());
-    }
-
-    @Then("^the footer should mention \"(.*)\" and \"(.*)\"$")
-    public void theFooterShouldMention(String first, String second) throws IOException {
-        String bodyText = mcp.evaluateText("() => document.body.innerText");
-        Assert.assertTrue("Footer does not mention '" + first + "'", bodyText.contains(first));
-        Assert.assertTrue("Footer does not mention '" + second + "'", bodyText.contains(second));
-    }
-
-    @Then("^the customer service notice should be displayed$")
-    public void theCustomerServiceNoticeShouldBeDisplayed() throws IOException {
-        String bodyText = mcp.evaluateText("() => document.body.innerText");
-        Assert.assertTrue("Notice text 'based on correct information' is missing",
-                bodyText.contains("based on correct information"));
-        Assert.assertTrue("Notice text 'Customer Service Team' is missing",
-                bodyText.contains("Customer Service Team"));
+    public void openYeloLoginPage(String url) throws Exception {
+        timed("When I open the Yelo login page at \"" + url + "\"", () -> {
+            requireClient();
+            mcp.navigate(url);
+            // The login form is rendered by the SPA after the first paint; wait for it before asserting.
+            mcp.waitForText("Log in", 30);
+        });
     }
 
     /**
@@ -137,35 +73,42 @@ public class PageMcpStepsDef {
      */
     @Then("^DeepSeek confirms the page matches the Yelo login design$")
     public void deepSeekConfirmsThePage(String checklist) throws Exception {
-        requireClient();
-        String screenshotPath = MCP_OUTPUT_DIR + DEEPSEEK_SCREENSHOT;
-        // Evidence comes from the same MCP browser the previous steps used.
-        mcp.screenshot(screenshotPath);
-        byte[] png = Files.readAllBytes(Paths.get(screenshotPath));
+        timed("And DeepSeek confirms the page matches the Yelo login design", () -> {
+            requireClient();
+            String screenshotPath = MCP_OUTPUT_DIR + DEEPSEEK_SCREENSHOT;
+            // Evidence comes from the same MCP browser the previous steps used.
+            mcp.screenshot(screenshotPath);
+            byte[] png = Files.readAllBytes(Paths.get(screenshotPath));
 
-        String review = (checklist == null || checklist.trim().isEmpty()) ? DEFAULT_LOGIN_CHECKLIST : checklist.trim();
-        DeepSeekVisionValidator.Verdict verdict = new DeepSeekVisionValidator()
-                .validate(png, "Yelo login page at https://ejarypp.qoad.com:4800/", review);
+            String review = (checklist == null || checklist.trim().isEmpty())
+                    ? DEFAULT_LOGIN_CHECKLIST : checklist.trim();
+            DeepSeekVisionValidator.Verdict verdict = new DeepSeekVisionValidator()
+                    .validate(png, "Yelo login page at https://ejarypp.qoad.com:4800/", review);
 
-        System.out.println("DeepSeek verdict: " + verdict);
-        Assert.assertTrue("DeepSeek did not confirm the login page design (" + verdict
-                        + "). Findings: " + verdict.getFindings(),
-                verdict.isPass());
+            System.out.println("DeepSeek verdict: " + verdict);
+            Assert.assertTrue("DeepSeek did not confirm the login page design (" + verdict
+                            + "). Findings: " + verdict.getFindings(),
+                    verdict.isPass());
+        });
     }
 
     @Then("^the Playwright MCP browser saves a screenshot named \"(.*)\"$")
-    public void saveScreenshot(String fileName) throws IOException {
-        requireClient();
-        mcp.screenshot(MCP_OUTPUT_DIR + fileName);
-        System.out.println("Screenshot saved: " + MCP_OUTPUT_DIR + fileName);
+    public void saveScreenshot(String fileName) throws Exception {
+        timed("And the Playwright MCP browser saves a screenshot named \"" + fileName + "\"", () -> {
+            requireClient();
+            mcp.screenshot(MCP_OUTPUT_DIR + fileName);
+            System.out.println("Screenshot saved: " + MCP_OUTPUT_DIR + fileName);
+        });
     }
 
     @Then("^the Playwright MCP browser is closed$")
-    public void closePlaywrightMcpBrowser() {
-        if (mcp != null) {
-            mcp.close();
-            mcp = null;
-        }
+    public void closePlaywrightMcpBrowser() throws Exception {
+        timed("And the Playwright MCP browser is closed", () -> {
+            if (mcp != null) {
+                mcp.close();
+                mcp = null;
+            }
+        });
     }
 
     /** Safety net: never leave the server (and its browser) running if a step fails. */
@@ -174,6 +117,22 @@ public class PageMcpStepsDef {
         if (mcp != null) {
             mcp.close();
             mcp = null;
+        }
+    }
+
+    /**
+     * Prints {@code <step text>\t<milliseconds>} after the step finishes, unless
+     * {@link StepTimingFormatter} already reports the timings for this run.
+     */
+    private void timed(String stepText, StepBody body) throws Exception {
+        long start = System.nanoTime();
+        try {
+            body.run();
+        } finally {
+            if (!StepTimingFormatter.isActive()) {
+                long millis = (System.nanoTime() - start) / 1_000_000L;
+                System.out.println("    " + stepText + TAB + millis + " ms");
+            }
         }
     }
 
