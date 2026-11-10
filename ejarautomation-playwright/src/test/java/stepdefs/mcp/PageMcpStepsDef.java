@@ -21,7 +21,7 @@ import java.util.Map;
  * {@code npx @playwright/mcp} and calls its tools ({@code browser_navigate},
  * {@code browser_wait_for}, {@code browser_evaluate}, {@code browser_take_screenshot}).</p>
  */
-public class YeloLoginPageMcpSteps {
+public class PageMcpStepsDef {
 
     private static final String MCP_OUTPUT_DIR = "test output/playwright-mcp/";
     private static final Gson GSON = new Gson();
