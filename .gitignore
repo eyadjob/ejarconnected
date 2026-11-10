@@ -8,7 +8,11 @@ Credentials/
 # binary merge conflicts on .class files.
 target/
 ejarautomation-playwright/target/
-ejarautomation-playwright/.idea/
+
+# IntelliJ IDEA project files — machine-specific, rewritten on every IDE session.
+# Covers both ./.idea and ejarautomation-playwright/.idea.
+.idea/
+*.iml
 
 # Playwright MCP runtime output - page snapshots, console logs and screenshots
 # written by the MCP browser during a run (McpPlaywrightClient / the 'AI MCP' feature).
