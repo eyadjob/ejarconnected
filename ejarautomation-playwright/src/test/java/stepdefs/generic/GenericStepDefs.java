@@ -1,5 +1,7 @@
 package stepdefs.generic;
 
+import automation.framework.ApiAutomation.ApiClient;
+import automation.framework.ApiAutomation.VehicleOperationsApi;
 import automation.framework.Element;
 import automation.framework.ScenarioContextSingleton;
 import automation.framework.business.StringHelper;
@@ -9,21 +11,18 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.PlaywrightException;
 import com.microsoft.playwright.options.WaitUntilState;
-import io.cucumber.java.an.E;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import org.junit.Assert;
 import com.microsoft.playwright.ConsoleMessage;
-import com.microsoft.playwright.options.LoadState;
-import io.cucumber.java.After;
 import stepdefs.ejar.web.EjarPages;
 import com.microsoft.playwright.Request;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import io.cucumber.java.After;
 
 import static automation.framework.Element.waitForLoadingIconToBeNotPresentStatic;
 
@@ -31,7 +30,8 @@ public class GenericStepDefs extends GenericPage {
 
     ThreadLocal<String> formName = new ThreadLocal<>();
     EjarPages ejarPages = new EjarPages();
-
+    ApiClient apiClient = new ApiClient();
+    VehicleOperationsApi vehicleOperationsApi = new VehicleOperationsApi(apiClient);
     @Given("^ejar login and open url with user name: (.*) and password: (.*) url: (.*)$")
     public void LoginWithUsernameAndPassword(String username, String password, String url) {
         PropManager.getInstance().getPropertiesValues().get("appProperties.properties").put("execution.project.name", "ejar web");
@@ -881,4 +881,15 @@ public void checkPageRequestsContains(String expectedUrlText, String assertionTy
     System.out.println("Found " + matching.size() + " request(s) containing \""
             + expectedUrlText + "\": " + matching);
 }
+
+    @And("^using API create a new vehicle with random plate and chassis numbers$")
+    public void createVehicleUsingAPI() {
+        vehicleOperationsApi.createVehicleWithRandomData();
+    }
+
+    @After("@API")
+        public void closeApiSession() {
+        apiClient.close();
+  }
+
 }
