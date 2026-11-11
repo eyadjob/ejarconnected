@@ -1,6 +1,9 @@
 package automation.framework.ApiAutomation;
 
-import automation.framework.ApiAutomation.beans.VehicleRecords.*;
+import automation.framework.ApiAutomation.beans.VehicleRequestRecord.*;
+import automation.framework.ApiAutomation.beans.VehicleRequestRecord.VehicleDto.*;
+import automation.framework.ApiAutomation.beans.VehicleResponseRecord;
+import automation.framework.ApiAutomation.beans.VehicleResponseRecord.Vehicle;
 import automation.framework.business.StringHelper;
 
 import java.time.LocalDateTime;
@@ -11,30 +14,30 @@ import java.util.List;
 public class VehicleOperationsApi {
 
     // ---------- fixed values from your JMeter request ----------
-    private static final String BRANCH_NAME = "Automation Branch";
-    private static final String ODOMETER = "22";
-    private static final int FUEL_ID = 208;
-    private static final String COUNTRY_ID = "1";
-    private static final String MODEL_ID = "2797";
-    private static final int YEAR = 2020;
-    private static final String LICENSE_TYPE_ID = "181";
-    private static final String USAGE_TYPE_ID = "190";
-    private static final String INSURANCE_COMPANY_ID = "79e51573-da85-4737-b3a3-92d0a3860353";
-    private static final int ACCIDENT_POLICY_ID = 52;
-    private static final String CURRENT_LOCATION_ID = "401";
-    private static final String VENDOR_ID = "79e51573-da85-4737-b3a3-92d0a3860353";
-    private static final String PRICE = "35000";
-    private static final String COLOR_ID = "1001706";
-    private static final String TRIM_LEVEL_ID = "1001707";
-    private static final String FUEL_TYPE_ID = "16";
-    private static final int FUEL_TANK_SIZE = 60;
-    private static final int ENGINE_SIZE = 1500;
+    public static final String BRANCH_NAME = "Automation Branch";
+    public static final String ODOMETER = "22";
+    public static final int FUEL_ID = 208;
+    public static final String COUNTRY_ID = "1";
+    public static final String MODEL_ID = "2797";
+    public static final int YEAR = 2020;
+    public static final String LICENSE_TYPE_ID = "181";
+    public static final String USAGE_TYPE_ID = "190";
+    public static final String INSURANCE_COMPANY_ID = "79e51573-da85-4737-b3a3-92d0a3860353";
+    public static final int ACCIDENT_POLICY_ID = 52;
+    public static final String CURRENT_LOCATION_ID = "401";
+    public static final String VENDOR_ID = "79e51573-da85-4737-b3a3-92d0a3860353";
+    public static final String PRICE = "35000";
+    public static final String COLOR_ID = "1001706";
+    public static final String TRIM_LEVEL_ID = "1001707";
+    public static final String FUEL_TYPE_ID = "16";
+    public static final int FUEL_TANK_SIZE = 60;
+    public static final int ENGINE_SIZE = 1500;
 
-    private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private final ApiClient apiClient;
-    private final AuthenticationOperationsApi authenticationApi;
-    private final GetOperationsApis getApis;
+    public final ApiClient apiClient;
+    public final AuthenticationOperationsApi authenticationApi;
+    public final GetOperationsApis getApis;
 
     public VehicleOperationsApi(ApiClient apiClient) {
         this.apiClient = apiClient;
@@ -64,22 +67,14 @@ public class VehicleOperationsApi {
                 new Specs(COLOR_ID, TRIM_LEVEL_ID, FUEL_TYPE_ID, FUEL_TANK_SIZE, ENGINE_SIZE),
                 COUNTRY_ID);
 
-        List<VehicleDto> dtos = new ArrayList<VehicleDto>();
-        dtos.add(dto);
+        apiClient.post(
+                ApiUris.CREATE_VEHICLES_URI,
+                new CreateVehicleRequest(new VehicleDto[]{dto})
+        );
 
-        apiClient.post(ApiUris.CREATE_VEHICLES_URI, new CreateVehiclesRequest(dtos));
-        if (apiClient.lastStatus() != 200) {
-            throw new AssertionError("Create Vehicle API failed! Expected status: 200"
-                    + ", Actual status: " + apiClient.lastStatus()
-                    + ", Response: " + apiClient.lastBody());
-        }
+        apiClient.assertStatusCode(2000,ApiUris.CREATE_VEHICLES_URI);
 
-        CreateVehiclesResponse response = apiClient.readBody(CreateVehiclesResponse.class);
-        if (response == null || !response.success()) {
-            throw new AssertionError("Create Vehicle API returned success=false. Response: "
-                    + apiClient.lastBody());
-        }
-        System.out.println("CreateVehicles status: " + apiClient.lastStatus());
+        apiClient.assertApiSuccess();
 
         Vehicle vehicle = new Vehicle(plateNo, chassisNo, branchId, MODEL_ID, YEAR, apiClient.lastBody());
         apiClient.store("vehicle", vehicle);

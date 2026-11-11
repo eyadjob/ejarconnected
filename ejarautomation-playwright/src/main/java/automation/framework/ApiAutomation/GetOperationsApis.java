@@ -18,16 +18,13 @@ public class GetOperationsApis {
     public String getBranchId(String branchName) {
         authenticationApi.ensureLoggedIn();
 
-        // Execute GET API
         apiClient.get(ApiUris.GET_ALL_BRANCHES_URI);
 
-        // Assert HTTP status
         if (apiClient.lastStatus() != 200) {
             throw new AssertionError("GET Branches failed. Status: " + apiClient.lastStatus()
                     + ", Response: " + apiClient.lastBody());
         }
 
-        // Parse JSON response
         JsonObject response = JsonParser.parseString(apiClient.lastBody()).getAsJsonObject();
 
         // Assert API success
@@ -35,7 +32,6 @@ public class GetOperationsApis {
             throw new AssertionError("GET Branches returned success=false: " + apiClient.lastBody());
         }
 
-        // Get result.items array
         JsonArray branches = response.getAsJsonObject("result").getAsJsonArray("items");
 
         // Find branch by name

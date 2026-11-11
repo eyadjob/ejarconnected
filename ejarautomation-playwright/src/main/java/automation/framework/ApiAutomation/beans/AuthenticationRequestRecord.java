@@ -1,7 +1,7 @@
 package automation.framework.ApiAutomation.beans;
 
 /** The login request and response */
-public class AuthenticationRecords {
+public class AuthenticationRequestRecord {
 
     public record AuthenticationRequest(
             String userNameOrEmailAddress,
@@ -9,9 +9,4 @@ public class AuthenticationRecords {
             boolean rememberClient) {
     }
 
-    public record AuthenticationResponse(Result result, boolean success) {
-    }
-
-    public record Result(String accessToken) {
-    }
 }
