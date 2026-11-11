@@ -62,6 +62,24 @@ public class DeepSeekVisionValidator {
             + "mark that line NOT satisfied (ok=false) and explain why \u2014 never resolve ambiguity in the "
             + "page's favour. Answer with json only, no prose.";
 
+    /** System role for {@link #validateAgainstMockup}: image 1 is the design, image 2 the implementation. */
+    private static final String MOCKUP_SYSTEM_PROMPT =
+            "You are a meticulous UI verification assistant for an automated test suite. "
+            + "You receive two images: image 1 is an approved MOCKUP/design, image 2 is a screenshot of the "
+            + "IMPLEMENTED page. Your job is to prove that the implementation covers the design and that the page "
+            + "is healthy. "
+            + "Enumerate the distinct elements you can identify in the mockup (logos, headings, labels, inputs, "
+            + "buttons, icons, links, footer copy, colour blocks) and, for each one, decide whether the implemented "
+            + "page shows it in the same place and with the same purpose. "
+            + "Always finish with exactly one item stating that the implemented page shows no error state: no "
+            + "validation messages, no red error banner, no stack trace, no 'something went wrong' text, no broken "
+            + "image and no blank or half-rendered page. "
+            + "Ignore harmless differences: anti-aliasing, exact pixel positions, font rendering, browser chrome, "
+            + "scrollbars and image-compression artefacts. "
+            + "When an element is missing or visibly different, or an error is visible, mark that item NOT "
+            + "satisfied (ok=false) and explain it in findings. Never resolve ambiguity in the page's favour. "
+            + "Answer with json only, no prose.";
+
     /** One checklist line and the model's verdict for it. */
     public static class Item {
         private final String text;
@@ -172,8 +190,35 @@ public class DeepSeekVisionValidator {
             throw new IllegalArgumentException("Screenshot is empty; nothing to validate.");
         }
         String apiKey = resolveApiKey();
-        String payload = buildPayload(imageBytes, requirement, checklist, apiKey);
+        return requestVerdict(buildPayload(imageBytes, requirement, checklist, apiKey), apiKey);
+    }
 
+    /**
+     * Compares the screenshot of the implemented page against a mockup/design image.
+     *
+     * <p>Unlike {@link #validate(byte[], String, String)} no checklist is supplied: the model derives the
+     * element list from the mockup itself, verifies every element on the page, and finally asserts that the
+     * page shows no error state (validation errors, fatal banner, stack trace, blank page, broken image).</p>
+     *
+     * @param pageScreenshot screenshot of the running page - shown to the model as image 2
+     * @param mockupImage    approved design / mockup - shown to the model as image 1
+     * @param requirement    one-line description of what is being compared
+     * @throws IllegalStateException when no API key is configured
+     */
+    public Verdict validateAgainstMockup(byte[] pageScreenshot, byte[] mockupImage, String requirement)
+            throws IOException, InterruptedException {
+        if (pageScreenshot == null || pageScreenshot.length == 0) {
+            throw new IllegalArgumentException("Page screenshot is empty; nothing to compare.");
+        }
+        if (mockupImage == null || mockupImage.length == 0) {
+            throw new IllegalArgumentException("Mockup image is empty; nothing to compare against.");
+        }
+        String apiKey = resolveApiKey();
+        return requestVerdict(buildMockupPayload(pageScreenshot, mockupImage, requirement), apiKey);
+    }
+
+    /** Sends the payload and parses the verdict; retries once when the model returns nothing usable. */
+    private Verdict requestVerdict(String payload, String apiKey) throws IOException, InterruptedException {
         String lastProblem = "";
         for (int attempt = 1; attempt <= 2; attempt++) {
             HttpRequest request = HttpRequest.newBuilder(URI.create(endpoint))
@@ -257,6 +302,90 @@ public class DeepSeekVisionValidator {
         body.addProperty("stream", false);
         // The key travels in the header only; it is never echoed into logs.
         return body.toString();
+    }
+
+    /**
+     * Payload for {@link #validateAgainstMockup(byte[], byte[], String)}: the mockup is image 1 and the page
+     * screenshot image 2, so the model compares design against implementation instead of a written checklist.
+     */
+    private String buildMockupPayload(byte[] pageScreenshot, byte[] mockupImage, String requirement) {
+        String userText =
+                "Requirement: " + requirement + "\n\n"
+                + "Image 1 = MOCKUP (approved design). Image 2 = IMPLEMENTED PAGE (screenshot of the running app).\n"
+                + "Do this, in order:\n"
+                + "1. List every distinct element of the mockup, in reading order.\n"
+                + "2. For each element decide whether the implemented page shows the same element, in the same "
+                + "place, with the same purpose.\n"
+                + "3. Finish with exactly one item that checks the implemented page shows no error state.\n\n"
+                + "Return json exactly in this shape:\n"
+                + "{\"items\": [{\"item\": \"<design element>\", \"ok\": true, \"evidence\": \"<where it appears on the page>\"}], "
+                + "\"pass\": true, \"confidence\": 0.95, \"findings\": []}\n"
+                + "Keep every string under 20 words. Mark ok=false when an element is missing or visibly "
+                + "different, or when an error state is visible, and put a one-line reason in findings for each "
+                + "failing item. Leave findings empty when everything holds.";
+
+        JsonObject textPart = new JsonObject();
+        textPart.addProperty("type", "text");
+        textPart.addProperty("text", userText);
+
+        JsonArray content = new JsonArray();
+        content.add(textPart);
+        content.add(imagePart(mockupImage));
+        content.add(imagePart(pageScreenshot));
+
+        JsonObject userMessage = new JsonObject();
+        userMessage.addProperty("role", "user");
+        userMessage.add("content", content);
+
+        JsonObject systemMessage = new JsonObject();
+        systemMessage.addProperty("role", "system");
+        systemMessage.addProperty("content", MOCKUP_SYSTEM_PROMPT);
+
+        JsonArray messages = new JsonArray();
+        messages.add(systemMessage);
+        messages.add(userMessage);
+
+        JsonObject responseFormat = new JsonObject();
+        responseFormat.addProperty("type", "json_object");
+
+        JsonObject body = new JsonObject();
+        body.addProperty("model", model);
+        body.add("messages", messages);
+        body.add("response_format", responseFormat);
+        body.addProperty("temperature", 0);
+        body.addProperty("max_tokens", 2000);
+        body.addProperty("stream", false);
+        return body.toString();
+    }
+
+    /** OpenAI-compatible {@code image_url} content part; the MIME type is sniffed from the bytes. */
+    private static JsonObject imagePart(byte[] imageBytes) {
+        JsonObject imageUrl = new JsonObject();
+        imageUrl.addProperty("url", "data:" + mimeType(imageBytes) + ";base64,"
+                + Base64.getEncoder().encodeToString(imageBytes));
+        imageUrl.addProperty("detail", "high");
+        JsonObject part = new JsonObject();
+        part.addProperty("type", "image_url");
+        part.add("image_url", imageUrl);
+        return part;
+    }
+
+    /** PNG/JPEG/GIF/WebP detection so a mockup supplied as .jpg is not mislabelled as PNG. */
+    private static String mimeType(byte[] b) {
+        if (b.length > 3 && (b[0] & 0xFF) == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47) {
+            return "image/png";
+        }
+        if (b.length > 3 && (b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xD8) {
+            return "image/jpeg";
+        }
+        if (b.length > 3 && b[0] == 'G' && b[1] == 'I' && b[2] == 'F') {
+            return "image/gif";
+        }
+        if (b.length > 12 && b[0] == 'R' && b[1] == 'I' && b[2] == 'F' && b[3] == 'F'
+                && b[8] == 'W' && b[9] == 'E' && b[10] == 'B' && b[11] == 'P') {
+            return "image/webp";
+        }
+        return "image/png";
     }
 
     private static String extractContent(String responseBody) {

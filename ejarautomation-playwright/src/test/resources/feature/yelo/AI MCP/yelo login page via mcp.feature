@@ -7,7 +7,7 @@ Feature: Yelo login page verified with the Playwright MCP browser
   Scenario: Login page renders the expected elements
     Given the Playwright MCP browser is started
     When I open the Yelo login page at "https://ejarypp.qoad.com:4800/"
-    And DeepSeek confirms the page matches the Yelo login design
+    And DeepSeek confirms the page matches the Yelo login design based on description
       """
       - Rentey wordmark in the top-right corner
       - Yellow "YELO يلو" tenant logo centred above the login form
@@ -21,4 +21,11 @@ Feature: Yelo login page verified with the Playwright MCP browser
         and "Customer Service Team"
       """
     And the Playwright MCP browser saves a screenshot named "yelo-login-page.png"
+    And the Playwright MCP browser is closed
+
+  @visual-mockup
+  Scenario: Login page matches the provided mockup design image
+    Given the Playwright MCP browser is started
+    When I open the Yelo login page at "https://ejarypp.qoad.com:4800/"
+    Then DeepSeek compares the opened page with the mockup image "src/test/resources/mockups/yelo/login-page-mockup.png"
     And the Playwright MCP browser is closed
