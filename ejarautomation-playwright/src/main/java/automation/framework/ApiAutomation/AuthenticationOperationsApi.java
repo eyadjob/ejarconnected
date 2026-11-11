@@ -1,7 +1,7 @@
 package automation.framework.ApiAutomation;
 
-import automation.framework.ApiAutomation.beans.AuthenticationRecords.AuthenticationRequest;
-import automation.framework.ApiAutomation.beans.AuthenticationRecords.AuthenticationResponse;
+import automation.framework.ApiAutomation.beans.AuthenticationRequestRecord.AuthenticationRequest;
+import automation.framework.ApiAutomation.beans.AuthenticationResponseRecord.AuthenticationResponse;
 import automation.framework.propmanager.PropManager;
 
 public class AuthenticationOperationsApi {

@@ -2,6 +2,7 @@ package stepdefs.generic;
 
 import automation.framework.ApiAutomation.ApiClient;
 import automation.framework.ApiAutomation.VehicleOperationsApi;
+import automation.framework.ApiAutomation.beans.VehicleResponseRecord.Vehicle;
 import automation.framework.Element;
 import automation.framework.ScenarioContextSingleton;
 import automation.framework.business.StringHelper;
@@ -884,7 +885,7 @@ public void checkPageRequestsContains(String expectedUrlText, String assertionTy
 
     @And("^using API create a new vehicle with random plate and chassis numbers$")
     public void createVehicleUsingAPI() {
-        vehicleOperationsApi.createVehicleWithRandomData();
+        Vehicle vehicle =vehicleOperationsApi.createVehicleWithRandomData();
     }
 
     @After("@API")
