@@ -2,6 +2,7 @@ package automation.framework.ApiAutomation;
 
 import automation.framework.propmanager.PropManager;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.microsoft.playwright.APIRequest;
 import com.microsoft.playwright.APIRequestContext;
 import com.microsoft.playwright.APIResponse;
@@ -142,6 +143,30 @@ public class ApiClient {
             throw new IllegalStateException("Nothing was stored under the key: " + key);
         }
         return type.cast(stored.get(key));
+    }
+
+    public void assertStatusCode(int expectedStatus,String uri) {
+        int actualStatus = lastStatus();
+        String apiName = uri.split("\\?")[0].replaceAll(".*/", "");
+
+        if (actualStatus != expectedStatus) {
+            throw new AssertionError(
+                    "\nAPI request failed\n"
+                            +apiName
+                            + " Expected status: " + expectedStatus
+                            + ", Actual status: " + actualStatus
+                            + ", \nResponse: " + lastBody()
+            );
+        }
+    }
+
+    public void assertApiSuccess() {
+        if (!new Gson().fromJson(lastBody(), JsonObject.class)
+                .get("success").getAsBoolean()) {
+            throw new AssertionError("API failed! Response: " + lastBody());
+        }
+
+        System.out.println("API succeeded. Status: " + lastStatus());
     }
 
     // ---------- cleanup ----------

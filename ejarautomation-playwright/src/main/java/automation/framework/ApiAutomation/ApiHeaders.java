@@ -22,7 +22,6 @@ public class ApiHeaders {
 
     private final Map<String, String> headers = new HashMap<String, String>();
 
-    /** The headers JMeter sends, except the ones Playwright adds by itself. Never overrides a header already set. */
     public void setDefaults() {
         headers.putIfAbsent(ACCEPT, JSON);
         headers.putIfAbsent(ACCEPT_LANGUAGE, "en");
