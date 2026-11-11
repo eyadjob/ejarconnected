@@ -11,6 +11,7 @@ import io.cucumber.java.en.When;
 import org.junit.Assert;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -32,6 +33,8 @@ public class PageMcpStepsDef {
 
     private static final String MCP_OUTPUT_DIR = "test output/playwright-mcp/";
     private static final String DEEPSEEK_SCREENSHOT = "deepseek-verification.png";
+    /** Page screenshot captured for the mockup comparison, kept next to the other MCP artefacts. */
+    private static final String MOCKUP_SCREENSHOT = "mockup-compare-page.png";
 
     /** Used only when the DeepSeek step is written without a docstring checklist. */
     private static final String DEFAULT_LOGIN_CHECKLIST =
@@ -71,7 +74,7 @@ public class PageMcpStepsDef {
      * LLM-as-judge step: captures the page through the MCP browser, sends the screenshot plus the
      * checklist (the feature's docstring) to DeepSeek, and asserts on the model's JSON verdict.
      */
-    @Then("^DeepSeek confirms the page matches the Yelo login design$")
+    @Then("^DeepSeek confirms the page matches the Yelo login design based on description$")
     public void deepSeekConfirmsThePage(String checklist) throws Exception {
         timed("And DeepSeek confirms the page matches the Yelo login design", () -> {
             requireClient();
@@ -84,6 +87,40 @@ public class PageMcpStepsDef {
 
             System.out.println("DeepSeek verdict: " + verdict);
             Assert.assertTrue("DeepSeek did not confirm the login page design (" + verdict
+                            + "). Findings: " + verdict.getFindings(),
+                    verdict.isPass());
+        });
+    }
+
+    /**
+     * Visual comparison against a design image: the model receives the mockup as image 1 and the page
+     * screenshot as image 2, derives the element list from the mockup itself, and must confirm that every
+     * element is present on the page and that the page shows no error state.
+     */
+    @Then("^DeepSeek compares the opened page with the mockup image \"(.*)\"$")
+    public void deepSeekComparesPageWithMockup(String mockupPath) throws Exception {
+        timed("And DeepSeek compares the opened page with the mockup image \"" + mockupPath + "\"", () -> {
+            requireClient();
+            Path mockup = Paths.get(mockupPath);
+            if (!Files.isRegularFile(mockup)) {
+                throw new IllegalStateException("Mockup image not found: " + mockup.toAbsolutePath()
+                        + " - drop the design image there or pass an absolute path.");
+            }
+            String screenshotPath = MCP_OUTPUT_DIR + MOCKUP_SCREENSHOT;
+            mcp.screenshot(screenshotPath);
+            byte[] pageScreenshot = Files.readAllBytes(Paths.get(screenshotPath));
+            byte[] mockupImage = Files.readAllBytes(mockup);
+
+            DeepSeekVisionValidator.Verdict verdict = new DeepSeekVisionValidator()
+                    .validateAgainstMockup(pageScreenshot, mockupImage,
+                            "The implemented page must contain every element of the mockup and must not show "
+                                    + "any error state.");
+
+            System.out.println("DeepSeek mockup verdict: " + verdict);
+            for (DeepSeekVisionValidator.Item item : verdict.getItems()) {
+                System.out.println("    " + item);
+            }
+            Assert.assertTrue("The page does not match the mockup " + mockup.getFileName() + " (" + verdict
                             + "). Findings: " + verdict.getFindings(),
                     verdict.isPass());
         });
