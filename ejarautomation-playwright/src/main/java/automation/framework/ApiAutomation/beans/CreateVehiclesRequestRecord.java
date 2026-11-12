@@ -1,8 +1,6 @@
 package automation.framework.ApiAutomation.beans;
 
-import java.util.List;
-
-public class VehicleRequestRecord {
+public class CreateVehiclesRequestRecord {
 
     public record CreateVehicleRequest(VehicleDto[] vehicleDtos) {
     }

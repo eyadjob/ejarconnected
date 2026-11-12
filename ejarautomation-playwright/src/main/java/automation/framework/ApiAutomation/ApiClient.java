@@ -1,3 +1,4 @@
+
 package automation.framework.ApiAutomation;
 
 import automation.framework.propmanager.PropManager;
@@ -20,19 +21,32 @@ public class ApiClient {
 
     private final Gson gson = new Gson();
     private final ApiHeaders headers = new ApiHeaders();
-    private final Map<String, Object> stored = new HashMap<String, Object>();
+    private final Map<String, Object> stored = new HashMap<>();
 
     private Playwright playwright;
     private APIRequestContext session;
     private String lastBody;
     private int lastStatus;
 
-    // ---------- headers ----------
+
+    public int getLastStatus() {
+        return lastStatus;
+    }
+
+    private void setLastStatus(int lastStatus) {
+        this.lastStatus = lastStatus;
+    }
+    public Playwright getPlaywright() {
+        return playwright;
+    }
+
+
     public ApiHeaders getHeaders() {
         return headers;
     }
 
     // ---------- session ----------
+
     /** Creates the session and the default headers on first use */
     public APIRequestContext getSession() {
         if (session == null) {
@@ -66,6 +80,7 @@ public class ApiClient {
     }
 
     // ---------- requests ----------
+
     public APIResponse get(String uri) {
         return send("GET", uri, null);
     }
@@ -87,6 +102,7 @@ public class ApiClient {
         APIRequestContext requestSession = getSession();
 
         RequestOptions options = RequestOptions.create();
+
         for (Map.Entry<String, String> h : headers.getAll().entrySet()) {
             options.setHeader(h.getKey(), h.getValue());
         }
@@ -97,6 +113,7 @@ public class ApiClient {
         }
 
         APIResponse response;
+
         switch (method) {
             case "GET":
                 response = requestSession.get(uri, options);
@@ -114,19 +131,16 @@ public class ApiClient {
                 throw new IllegalArgumentException("Unsupported method: " + method);
         }
 
-        // the body can be read only once, so keep it here for everyone to use
-        lastStatus = response.status();
+        setLastStatus(response.status());
         lastBody = response.text();
+
         return response;
     }
 
     // ---------- last response ----------
-    public String lastBody() {
-        return lastBody;
-    }
 
-    public int lastStatus() {
-        return lastStatus;
+    public String getLastBody() {
+        return lastBody;
     }
 
     public <T> T readBody(Class<T> type) {
@@ -138,50 +152,65 @@ public class ApiClient {
         stored.put(key, value);
     }
 
-    public <T> T stored(String key, Class<T> type) {
+    public <T> T retrieveStoredValue(String key, Class<T> type) {
         if (!stored.containsKey(key)) {
             throw new IllegalStateException("Nothing was stored under the key: " + key);
         }
         return type.cast(stored.get(key));
     }
 
-    public void assertStatusCode(int expectedStatus,String uri) {
-        int actualStatus = lastStatus();
-        String apiName = uri.split("\\?")[0].replaceAll(".*/", "");
+    public String getApiName(String uri) {
+        return uri.split("\\?")[0].replaceAll(".*/", "");
+    }
+
+    // ---------- assertions ----------
+
+    public void assertStatusCode(int expectedStatus, String uri) {
+        int actualStatus = getLastStatus();
 
         if (actualStatus != expectedStatus) {
             throw new AssertionError(
-                    "\nAPI request failed\n"
-                            +apiName
-                            + " Expected status: " + expectedStatus
+                    "\nAPI request failed"
+                            + "\nAPI Name: " + getApiName(uri)
+                            + "\nExpected status: " + expectedStatus
                             + ", Actual status: " + actualStatus
-                            + ", \nResponse: " + lastBody()
+                            + "\nResponse: " + getLastBody()
             );
         }
     }
 
-    public void assertApiSuccess() {
-        if (!new Gson().fromJson(lastBody(), JsonObject.class)
-                .get("success").getAsBoolean()) {
-            throw new AssertionError("API failed! Response: " + lastBody());
-        }
+    public void assertApiSuccess(String uri) {
+        JsonObject response = gson.fromJson(getLastBody(), JsonObject.class);
 
-        System.out.println("API succeeded. Status: " + lastStatus());
+        if (response == null
+                || !response.has("success")
+                || response.get("success").isJsonNull()
+                || !response.get("success").getAsBoolean()) {
+
+            throw new AssertionError(
+                    "\nAPI request failed"
+                            + "\nAPI Name: " + getApiName(uri)
+                            + "\nResponse: " + getLastBody()
+            );
+        }
     }
 
     // ---------- cleanup ----------
+
     public void close() {
         if (session != null) {
             session.dispose();
             session = null;
         }
+
         if (playwright != null) {
             playwright.close();
             playwright = null;
         }
+
         headers.clear();
         stored.clear();
         lastBody = null;
-        lastStatus = 0;
+        setLastStatus(0);
     }
 }

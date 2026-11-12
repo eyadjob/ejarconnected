@@ -1,9 +1,13 @@
+
 package automation.framework.ApiAutomation;
 
+import automation.framework.ApiAutomation.beans.ComboboxResponseRecord;
+import automation.framework.ApiAutomation.beans.DefaultsResponseRecord;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import lombok.Builder;
 
 public class GetOperationsApis {
 
@@ -20,26 +24,15 @@ public class GetOperationsApis {
 
         apiClient.get(ApiUris.GET_ALL_BRANCHES_URI);
 
-        if (apiClient.lastStatus() != 200) {
-            throw new AssertionError("GET Branches failed. Status: " + apiClient.lastStatus()
-                    + ", Response: " + apiClient.lastBody());
-        }
+        apiClient.assertStatusCode(200, ApiUris.GET_ALL_BRANCHES_URI);
+        apiClient.assertApiSuccess(ApiUris.GET_ALL_BRANCHES_URI);
 
-        JsonObject response = JsonParser.parseString(apiClient.lastBody()).getAsJsonObject();
+        ComboboxResponseRecord comboboxResponseRecord = apiClient.readBody(ComboboxResponseRecord.class);
 
-        // Assert API success
-        if (!response.get("success").getAsBoolean()) {
-            throw new AssertionError("GET Branches returned success=false: " + apiClient.lastBody());
-        }
 
-        JsonArray branches = response.getAsJsonObject("result").getAsJsonArray("items");
-
-        // Find branch by name
-        for (JsonElement element : branches) {
-            JsonObject branch = element.getAsJsonObject();
-
-            if (branch.get("name").getAsString().trim().equalsIgnoreCase(branchName.trim())) {
-                return branch.get("id").getAsString();
+        for (ComboboxResponseRecord.result.Item item: comboboxResponseRecord.result().items()) {
+            if ( item.displayText().equals(branchName.trim())){
+                return String.valueOf(item.value());
             }
         }
 
