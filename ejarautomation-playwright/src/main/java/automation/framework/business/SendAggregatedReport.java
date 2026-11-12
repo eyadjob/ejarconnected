@@ -95,21 +95,21 @@ public class SendAggregatedReport {
                 : (reportDataHandler.getEndTimeString() != null ? reportDataHandler.getEndTimeString() : "");
         String statusPill;
         if (reportDataHandler.isAllPass()) {
-            statusPill = "<span style=\"background-color: #c6f6d5; color: #22543d; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 12px;\">All passed (" + reportDataHandler.getTestCountInScenario() + ")</span>";
+            statusPill = "<span style=\"display: inline-block; vertical-align: middle; background-color: #c6f6d5; color: #22543d; font-size: 13px; font-weight: 600; padding: 6px 16px; border-radius: 16px;\">All passed (" + reportDataHandler.getTestCountInScenario() + ")</span>";
         } else if (reportDataHandler.isAllFail()) {
-            statusPill = "<span style=\"background-color: #fed7d7; color: #742a2a; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 12px;\">All Failed (" + reportDataHandler.getTestCountInScenario() + ")</span>";
+            statusPill = "<span style=\"display: inline-block; vertical-align: middle; background-color: #fed7d7; color: #742a2a; font-size: 13px; font-weight: 600; padding: 6px 16px; border-radius: 16px;\">All Failed (" + reportDataHandler.getTestCountInScenario() + ")</span>";
         } else {
-            statusPill = "<span style=\"background-color: #feebc8; color: #7b341e; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 12px;\">" + reportDataHandler.getPassCount() + " Pass, " + reportDataHandler.getFailCount() + " Fail</span>";
+            statusPill = "<span style=\"display: inline-block; vertical-align: middle; background-color: #feebc8; color: #7b341e; font-size: 13px; font-weight: 600; padding: 6px 16px; border-radius: 16px;\">" + reportDataHandler.getPassCount() + " Pass, " + reportDataHandler.getFailCount() + " Fail</span>";
         }
-        String rowBorder = isLastRow ? "" : " border-bottom: 1px solid #edf2f7;";
+        String rowBorder = isLastRow ? "" : " border-bottom: 1px solid #f0f0f0;";
         StringBuilder resultBodyString = new StringBuilder();
         resultBodyString.append("<tr>\n");
-        resultBodyString.append("  <td align=\"left\" style=\"padding: 15px;").append(rowBorder).append("\">\n");
-        resultBodyString.append("    <a href=\"file:///").append(reportLink).append("\" style=\"color: #3182ce; text-decoration: none; font-weight: bold; font-size: 15px; display: block; margin-bottom: 4px;\">").append(reportDataHandler.getFeatureName()).append("</a>\n");
-        resultBodyString.append("    <span style=\"font-size: 11px; color: #a0aec0;\">Start: ").append(startStr).append(" | End: ").append(endStr).append("</span>\n");
+        resultBodyString.append("  <td style=\"padding: 20px 0;").append(rowBorder).append(" vertical-align: middle;\" width=\"60%\">\n");
+        resultBodyString.append("    <a href=\"file:///").append(reportLink).append("\" style=\"color: #2c7bbd; text-decoration: none; font-weight: 600; font-size: 16px; display: block; margin-bottom: 4px;\">").append(reportDataHandler.getFeatureName()).append("</a>\n");
+        resultBodyString.append("    <span style=\"font-size: 12px; color: #999999;\">Start: ").append(startStr).append(" | End: ").append(endStr).append("</span>\n");
         resultBodyString.append("  </td>\n");
-        resultBodyString.append("  <td align=\"center\" style=\"padding: 15px;").append(rowBorder).append(" font-size: 13px; color: #718096; font-family: monospace;\">\n    ").append(reportDataHandler.getElapsedTime() != null ? reportDataHandler.getElapsedTime() : "").append("\n  </td>\n");
-        resultBodyString.append("  <td align=\"right\" style=\"padding: 15px;").append(rowBorder).append("\">\n    ").append(statusPill).append("\n  </td>\n");
+        resultBodyString.append("  <td style=\"font-size: 14px; color: #666666; font-weight: 500; font-family: 'Courier New', monospace; text-align: center; vertical-align: middle;").append(rowBorder).append("\" width=\"20%\">").append(reportDataHandler.getElapsedTime() != null ? reportDataHandler.getElapsedTime() : "").append("</td>\n");
+        resultBodyString.append("  <td style=\"padding: 20px 0; text-align: center; vertical-align: middle;").append(rowBorder).append("\" width=\"20%\">\n    ").append(statusPill).append("\n  </td>\n");
         resultBodyString.append("</tr>\n");
         return resultBodyString.toString();
     }
@@ -584,7 +584,7 @@ public class SendAggregatedReport {
                 "                    <tr>\n" +
                 "                        <td class=\"header-section\" style=\"background-color: #4D0970; padding: 18px 40px; text-align: center;\">\n" +
                 "                            <img src=\"cid:high-logo\" alt=\"Yelo\" width=\"196\" style=\"display: block; margin: 0 auto 11px auto; max-width: 196px; width: 100%; height: auto; border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic;\">\n" +
-                "                            <h1 style=\"color: #ffffff; font-size: 28px; font-weight: 600; line-height: 1.2; margin: 0; letter-spacing: 0.5px;\">Automation Test Report</h1>\n" +
+                "                            <h1 style=\"color: #ffffff; font-size: 28px; font-weight: 600; line-height: 1.2; margin: 0; letter-spacing: 0.5px;\">Automated Regression Test</h1>\n" +
                 "                        </td>\n" +
                 "                    </tr>\n" +
                 "                    <!-- Execution Summary -->\n" +
