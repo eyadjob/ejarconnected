@@ -1,5 +1,7 @@
 package automation.framework.ApiAutomation;
 
+import automation.framework.propmanager.PropManager;
+
 public class ApiUris {
 
     public static final String AUTHENTICATE_URI =
@@ -9,5 +11,5 @@ public class ApiUris {
             "api/services/app/Vehicle/CreateVehicles";
 
     public static final String GET_ALL_BRANCHES_URI =
-            "api/services/app/Branch/GetAllBranches?branchTypeId=8900&allActive=false";
+            "api/services/app/Branch/GetBranchesComboboxItems?countryId="+ PropManager.getInstance().getProperty("api.country.id");
 }

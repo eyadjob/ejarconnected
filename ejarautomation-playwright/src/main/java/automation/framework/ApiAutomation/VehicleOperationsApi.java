@@ -1,15 +1,12 @@
 package automation.framework.ApiAutomation;
 
-import automation.framework.ApiAutomation.beans.VehicleRequestRecord.*;
-import automation.framework.ApiAutomation.beans.VehicleRequestRecord.VehicleDto.*;
-import automation.framework.ApiAutomation.beans.VehicleResponseRecord;
-import automation.framework.ApiAutomation.beans.VehicleResponseRecord.Vehicle;
+import automation.framework.ApiAutomation.beans.CreateVehiclesRequestRecord.*;
+import automation.framework.ApiAutomation.beans.CreateVehiclesRequestRecord.VehicleDto.*;
 import automation.framework.business.StringHelper;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 public class VehicleOperationsApi {
 
@@ -45,7 +42,7 @@ public class VehicleOperationsApi {
         this.getApis = new GetOperationsApis(apiClient);
     }
 
-    public Vehicle createVehicleWithRandomData() {
+    public CreateVehicleRequest createVehicleWithRandomData() {
         authenticationApi.ensureLoggedIn();
 
         String branchId = getApis.getBranchId(BRANCH_NAME);
@@ -67,18 +64,16 @@ public class VehicleOperationsApi {
                 new Specs(COLOR_ID, TRIM_LEVEL_ID, FUEL_TYPE_ID, FUEL_TANK_SIZE, ENGINE_SIZE),
                 COUNTRY_ID);
 
-        apiClient.post(
-                ApiUris.CREATE_VEHICLES_URI,
-                new CreateVehicleRequest(new VehicleDto[]{dto})
-        );
 
-        apiClient.assertStatusCode(2000,ApiUris.CREATE_VEHICLES_URI);
+        CreateVehicleRequest createVehicleRequest = new CreateVehicleRequest(new VehicleDto[]{dto});
 
-        apiClient.assertApiSuccess();
+        apiClient.post(ApiUris.CREATE_VEHICLES_URI, createVehicleRequest);
 
-        Vehicle vehicle = new Vehicle(plateNo, chassisNo, branchId, MODEL_ID, YEAR, apiClient.lastBody());
-        apiClient.store("vehicle", vehicle);
-        System.out.println("Vehicle created through API Plate NO: " + vehicle.plateNo());
-        return vehicle;
+        apiClient.assertStatusCode(200,ApiUris.CREATE_VEHICLES_URI);
+        apiClient.assertApiSuccess(ApiUris.CREATE_VEHICLES_URI);
+
+        apiClient.store("vehicle", createVehicleRequest);
+        System.out.println("Vehicle created through API Plate NO: " + createVehicleRequest.vehicleDtos()[0].vehicleLicenseInfo().plateNo());
+        return createVehicleRequest;
     }
 }

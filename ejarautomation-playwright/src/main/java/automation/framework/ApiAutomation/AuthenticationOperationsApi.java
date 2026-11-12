@@ -30,12 +30,12 @@ public class AuthenticationOperationsApi {
                 false);
 
         apiClient.post(ApiUris.AUTHENTICATE_URI, request);
-        System.out.println("API login status: " + apiClient.lastStatus());
+        System.out.println("API login status: " + apiClient.getLastStatus());
 
         AuthenticationResponse response = apiClient.readBody(AuthenticationResponse.class);
         if (response == null || response.result() == null || response.result().accessToken() == null) {
-            throw new IllegalStateException("API login failed. Status: " + apiClient.lastStatus()
-                    + ", body: " + apiClient.lastBody());
+            throw new IllegalStateException("API login failed. Status: " + apiClient.getLastStatus()
+                    + ", body: " + apiClient.getLastBody());
         }
 
         apiClient.getHeaders().setBearerToken(response.result().accessToken());
