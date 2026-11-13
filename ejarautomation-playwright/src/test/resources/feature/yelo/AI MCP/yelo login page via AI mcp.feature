@@ -27,7 +27,7 @@ Feature: Yelo login page verified with the Playwright MCP browser
   Scenario: Login page matches the provided mockup design image
     Given the Playwright MCP browser is started
     When I open the Yelo login page at "https://ejarypp.qoad.com:4800/"
-    And wait for number of seconds: 20
+    And wait for number of seconds: 5
 #    And wait for element present: ejar.loginpage.username.byxpath for period in seconds: 80
     Then DeepSeek compares the opened page with the mockup image "src/test/resources/mockups/yelo/login/login-page-mockup-correct.png"
     And the Playwright MCP browser is closed
