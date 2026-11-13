@@ -193,6 +193,7 @@ WebP/SVG, so convert new brand assets to PNG/JPG before referencing them. The `*
 
 | Area | Current state |
 |---|---|
+| Report layout | Results table uses percentage columns (58% URL / 16% method / 26% response) with `table-layout:fixed`, compact padding and mobile media rules — on phones the URL column no longer collapses while method/response keep empty space |
 | Branding | Report e-mail rebuilt on the Yelo layout: purple `#4D0970` header band + footer, `#FACB03` accent on the word "Yelo", `info@iyelo.com`; namespace `eyad.com.yelo`; logo `email html/Yelo logo.png` sent as a CID inline part |
 | Mail transport | Microsoft Graph client-credentials flow (`EmailHandler` → `MicrosoftGraphMailSender`); the SMTP path and `SendEmailHandler` are legacy leftovers of a Gmail-based sender |
 | Report template | Modern card layout (`stat-total` / `stat-ok` / `stat-bad`), method pills, zebra rows, `GeneralDataVariable` + `TimestampVariable` placeholders |

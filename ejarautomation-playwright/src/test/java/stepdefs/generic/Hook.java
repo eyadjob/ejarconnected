@@ -221,6 +221,37 @@ public class Hook {
     }
 
 
+    /** Feature-level tag on the Playwright-MCP scenarios; they own their browser and must bypass DriverFactory. */
+    private static final String MCP_TAG = "@ai-mcp";
+
+    /**
+     * True for the AI/MCP scenarios, which drive the browser through {@code npx @playwright/mcp}.
+     *
+     * <p>When such a feature is launched straight from the IDE, IntelliJ resolves <em>all</em> glue on the
+     * classpath instead of the runner's {@code glue = {"stepdefs.mcp"}}, so these hooks run too. Without this
+     * guard the per-step loading-icon wait ({@link Element} → {@code DriverFactory}) starts a second, visible
+     * Chrome on {@code about:blank} next to the MCP browser.</p>
+     */
+    private static boolean isMcpScenario(Scenario scenario) {
+        if (scenario == null) {
+            return false;
+        }
+        try {
+            if (scenario.getSourceTagNames().contains(MCP_TAG)) {
+                return true;
+            }
+            // Fallback: any feature under "AI MCP/" is an MCP scenario even without the tag.
+            java.net.URI uri = scenario.getUri();
+            if (uri != null) {
+                String path = uri.toString().replace("%20", " ").toLowerCase();
+                return path.contains("/ai mcp/") || path.endsWith("ai mcp");
+            }
+        } catch (Throwable ignored) {
+            return false;
+        }
+        return false;
+    }
+
     /** Nanotime captured by {@code @BeforeStep}; absent means no step is in flight on this thread. */
     private static final ThreadLocal<Long> STEP_START_NANOS = new ThreadLocal<>();
     /** 1-based step counter for the current scenario, used when no step name can be resolved. */
@@ -228,6 +259,9 @@ public class Hook {
 
     @BeforeStep
     public static void beforeStep(Scenario scenario) {
+        if (isMcpScenario(scenario)) {
+            return;
+        }
         STEP_START_NANOS.set(System.nanoTime());
         Integer previous = STEP_INDEX.get();
         STEP_INDEX.set(previous == null ? 1 : previous + 1);
@@ -237,8 +271,16 @@ public class Hook {
     @AfterStep
     public static void afterStep(Scenario scenario) {
         printStepTiming();
+        if (isMcpScenario(scenario)) {
+            // MCP scenarios manage their own browser; never let these hooks start a DriverFactory browser.
+            return;
+        }
         try {
-            new Element("ejar.waitingicon.byxpath").waitForElementNotVisible();
+            // Only wait for the loading icon when a page already exists: constructing an Element would
+            // otherwise initialise a whole browser just to check a loader on a scenario that has none.
+            if (DriverFactory.getPageIfExists() != null) {
+                new Element("ejar.waitingicon.byxpath").waitForElementNotVisible();
+            }
         } catch (AssertionError e) {
             System.out.println("AfterStep: loading icon wait skipped or timed out: " + e.getMessage());
         } catch (Throwable t) {
@@ -339,6 +381,9 @@ public class Hook {
 
     @Before
     public void startVideoRecording(Scenario scenario) throws IOException {
+        if (isMcpScenario(scenario)) {
+            return;
+        }
         System.out.println("hook before scenaior");
         STEP_INDEX.remove();
         STEP_START_NANOS.remove();
@@ -359,6 +404,9 @@ public class Hook {
 
     @After
     public void finishVideoRecording(Scenario scenario) throws IOException {
+        if (isMcpScenario(scenario)) {
+            return;
+        }
         System.out.println("we have entered the hooks after scenario method");
 
         // Assert all soft assertions and log failures to report

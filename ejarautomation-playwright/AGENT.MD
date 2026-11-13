@@ -183,7 +183,24 @@ explicitly, or restore the artefacts first.
 `pom.xml` still lists `TestRunner_Alyam_*` profiles whose runner classes and features no longer
 exist. Selecting them runs zero tests and "passes". Do not use them as evidence of coverage.
 
-### 5.10 Misc
+### 5.10 MCP features open a second, blank Chrome when launched from the IDE
+
+Symptom: running `feature/yelo/AI MCP/*.feature` from IntelliJ opens **two** Chrome windows — one on
+the login page (the MCP browser) and one blank.
+
+Cause: IntelliJ ignores the runner's `glue = {"stepdefs.mcp"}` and loads every step-definition class,
+so `stepdefs.generic.Hook` runs. Its `@AfterStep` loading-icon wait constructs an `Element`, which
+initialises `DriverFactory` — and because `execution.headless=false`, that is a second **visible**
+browser parked on `about:blank`.
+
+Fix (already in place): `Hook.isMcpScenario(...)` detects `@ai-mcp` (or any feature under an `AI MCP/`
+folder) and the four hooks return early for those scenarios; the loader wait also checks
+`DriverFactory.getPageIfExists()` first, so no hook can start a browser just to look for a loader.
+
+If you add an MCP scenario elsewhere, tag it `@ai-mcp` (or keep it inside an `AI MCP` folder) or the
+generic hooks will start a browser for it again.
+
+### 5.11 Misc
 
 - Pie-chart generation logs `chartTempFolder … The system cannot find the path specified` — the
   folder is missing; harmless for the production mail, but create it if charts are expected.
@@ -198,6 +215,7 @@ exist. Selecting them runs zero tests and "passes". Do not use them as evidence 
 
 | Area | Change |
 |---|---|
+| AI/MCP | Generic hooks now skip `@ai-mcp` scenarios (and any feature under an `AI MCP/` folder), and the loading-icon wait only runs when a page already exists — fixes the second blank Chrome when an MCP feature is run from the IDE |
 | Report e-mail | Rebuilt the production "Automation Test Report" on the Yelo layout: merged logo + title into one purple header cell (`#4D0970`), 196 px logo, tightened header (≈117 px) and footer (≈130 px), white footer text with the word "Yelo" in `#FACB03`, footer now says Yelo / `info@iyelo.com` |
 | Report e-mail | Logo switched to the Yelo wordmark (`logos/Yelo_logo_text_only.png`, converted from WebP) and resolution made resilient to file renames |
 | Report e-mail | Logo delivery fixed for Outlook: CID inline attachment instead of base64 data URI; Graph `contentId` corrected to `high-logo` |
