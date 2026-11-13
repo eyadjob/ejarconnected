@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta content="text/html; charset=utf-8">
+    <style>
+         .baseHeader {
+         font-size: 28px;
+         font-weight: bold;
+         color: #500788;
+         margin: 0;
+         }
+         .contentSlideDiv {
+         padding-top: 0px !important;
+         }
+         .TxtAr {
+         direction: rtl;
+         margin-left: 5px;
+         text-align: right;
+         }
+         .TxtAr .baseHeader {
+         text-align: right;
+         }
+         .TxtEn {
+         direction: ltr;
+         margin-right: 5px;
+         text-align: left;
+         }
+         .text {
+         text-align: justify;
+         }
+         body {
+         text-align: center;
+         background-color: white;
+         font-family: sans-serif;
+         }
+         .detail {
+         font-size: 21px;
+         }
+         .middleDiv {
+         margin-left: 15px;
+         margin-right: 15px;
+         width: 20%;
+         padding-left: 0px;
+         padding-right: 0px;
+         vertical-align: middle;
+         }
+		 .reportDate {
+		 padding-left: 20px;
+		 text-align: left;
+		 }
+		  .reportDate th{
+		 text-align: left;
+		 vertical-align: top;
+		 }
+         #UpperLogo {
+         background-color: white;
+         color: #505050;
+         }
+         #table1, #table2, #table3 {
+         border: none;
+         background-color: white;
+         }
+         #table1 td, #table2 td, #table3 td {
+         padding-top: 10px;
+         padding-bottom: 20px;
+         padding-left: 20px;
+         padding-right: 20px;
+         vertical-align: text-top;
+         }
+         .img {
+         padding-bottom: 10px;
+         max-width: 600px;
+         height: 146px;
+         }
+         .halfWidth {
+         width: 40%;
+         }
+         .contentDetails {
+         border: 10px solid #FFCD00;
+         font-size: 27px;
+         }
+         .orangeText {
+         color: #500788;
+         }
+         .centeredText {
+         text-align: center;
+         }
+         #mainTable {
+         border: 1px solid #B7B7B7;
+         background-color: #E4E4E4;
+         width: 100%;
+         }
+         #mainTable .mainTableTD {
+         padding-right: 30px;
+         padding-left: 30px;
+         padding-top: 3px;
+         }
+         #callUsTable td {
+         padding: 0px;
+         }
+         .mainBtnTable {
+         -ms-border-radius: 5px;
+         border-radius: 5px;
+         background-color: #500788;
+         }
+         .mainBtnTable td {
+         padding-bottom: 0px !important;
+         text-align: center;
+         padding-top: 0px !important;
+         padding-left: 2px !important;
+         padding-right: 5px !important;
+         vertical-align: middle !important;
+         }
+         .mainBtnTable a {
+         text-decoration: none;
+         color: #FFCD00;
+         }
+         .SidesDiv {
+         width: 40%;
+         vertical-align: bottom !important;
+         padding-bottom: 0px !important;
+         }
+         #upperTable {
+         border: 1px solid #BBBBBB;
+         background-color: white;
+         border-bottom: 3px #B7B7B7 solid;
+         width: 100%;
+         }
+         #upperTable td {
+         padding-top: 11px;
+         }
+         #imgFooterTD {
+         text-align: center;
+         padding-top: 45px;
+         padding-bottom: 45px;
+         height: 66px;
+         }
+         #imgFooterTD img {
+         max-width: 21%;
+         }
+         #UpperLogo img {
+         max-width: 31%;
+         }
+         #welcomeRegistrationTable {
+         direction: ltr;
+         padding-right: 27px;
+         padding-left: 27px;
+         padding-top: 10px;
+         padding-bottom: 15px;
+         background-color: white;
+         font-size: 26px;
+         }
+         #welcomeRegistrationSubTable {
+         padding-bottom: 20px;
+         padding-top: 11px;
+         }
+         .mediaShare img {
+         width: 50px;
+         height: 50px;
+         display: inline-block;
+         }
+         .mediaShare a {
+         text-decoration: none;
+         border: none;
+         }
+         .mediaShare span {
+         padding-right: 8px;
+         padding-left: 8px;
+         }
+		 .passed { 
+         color: #009900 !important; 
+         font-weight: bold; 
+         } 
+		 .error, .failed { 
+         color: red !important; 
+         } 
+
+
+    </style>
+</head>
+<body>
+<table align="center" width="85%">
+    <tbody>
+    <tr>
+        <td>
+            <table align="center" id="upperTable" width="100%">
+                <tbody>
+                <tr>
+                    <td>
+                        <div id="UpperLogo">
+                            <img alt="Yelo" src="http://www.iyelo.com/Content/Images/logo high.png">
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <table id="mainTable">
+                <tbody>
+                <tr>
+                    <td height="20"></td>
+                </tr>
+                <tr>
+                    <td class="mainTableTD">
+                        <table border="0" cellpadding="0" cellspacing="0" id="welcomeRegistrationTable" width="100%">
+                            <tbody>
+                            <tr>
+                                <td class="centeredText">
+                                    <h1 class="orangeText" style="font-size: 30px; margin-top: 20px;">
+                                        Automation Test Report
+                                    </h1>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="centeredText" style="font-size: 18px;padding-bottom: 23px; font-weight:bold">
+                                    A report has been generated, summary is listed below, click on test feature title
+                                    link to open the report folder
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <table align="center" class="contentDetails" height="200"
+                                           id="welcomeRegistrationSubTable" width="100%">
+                                        <tbody>
+                                        <tr>
+                                            <td class="orangeText" style="font-size: 25px; margin-top: 20px;">
+                                                Test Features
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <br>
+                                                    <table class="reportDate" style="font-size: 15px; margin-top: 1px;">
+                                                        <tbody>
+
+                                                        <tr>
+                                                            <th>Full Name:</th>
+                                                            <td>
+                                                                <a href='" + copyPath + "\\" + getHtmlFileName(reportFolderPathForCurrentFeature) + "'>Ejar
+                                                                    Login Verification</a>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Status:</th>
+                                                            <td>test total: 3 , <span class="passed">2 passed</span>,
+                                                                <span class="failed">1 failed, 0 error</span>
+
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <th>Start / End / Elapsed:</th>
+                                                            <td style="font-size: 15px;">Wed Jan 06 15:14:01 EET 2021
+                                                                <span style="color:red"> / </span>Wed Jan 06 15:14:23
+                                                                EET 2021
+                                                                <span style="color:red"> / </span>0:0:22
+                                                            </td>
+                                                        </tr>
+
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="mainTableTD">
+                        <table id="table3">
+                            <tbody>
+                            <tr class="mediaShare">
+                                <td colspan="4">
+                                          <span>
+                                          <a href="http://www.iyelo.com" target="_blank">
+                                          <img alt="Yelo"
+                                               src="http://www.iyelo.com/Content/Images/Email/website-icon.png"
+                                               style="width:30px; height:30px;"/>
+                                          </a>
+                                          </span>
+                                    <span>
+                                          <a href="https://twitter.com/yelocar" target="_blank">
+                                          <img alt="Twitter"
+                                               src="http://www.iyelo.com/Content/Images/Email/twitter-icon.png"
+                                               style="width:30px; height:30px;"/>
+                                          </a>
+                                          </span>
+                                    <span>
+                                          <a href="https://www.facebook.com/yelo" target="_blank">
+                                          <img alt="Facebook"
+                                               src="http://www.iyelo.com/Content/Images/Email/facebook-icon.png"
+                                               style="width:30px; height:30px;"/>
+                                          </a>
+                                          </span>
+                                    <span>
+                                          <a href="http://www.linkedin.com/company/yelo-rent-a-car" target="_blank">
+                                          <img alt="LinkedIn"
+                                               src="http://www.iyelo.com/Content/Images/Email/linkedIn-icon.png"
+                                               style="width:30px; height:30px;"/>
+                                          </a>
+                                          </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="TxtEn halfWidth" colspan="2">
+                                    <div class="detail" style="font-size: 12px;">
+                                        © 2017 yelo Rent a Car. All rights reserved.
+                                        Thank you for using our services. And look forward
+                                        to your help in the future.
+                                    </div>
+                                </td>
+                                <td class="TxtAr halfWidth" colspan="2">
+                                    <div class="detail" style="direction: rtl; font-size: 12px;"
+                                    " >
+                                    جميع الحقوق محفوظة
+                                    <span style="font-size: 12px">&copy; 2017</span> يلو لتأجير السيارات . نشكركم
+                                    لاستخدام خدماتنا.ونتطلع الى مساعدتكم في المستقبل.
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td height="20"></td>
+                </tr>
+                </tbody>
+            </table>
+        </td>
+    </tr>
+
+    </tbody>
+</table>
+<br>
+</body>
+</html>
