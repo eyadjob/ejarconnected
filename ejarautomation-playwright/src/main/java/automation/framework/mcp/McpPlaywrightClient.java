@@ -157,9 +157,52 @@ public class McpPlaywrightClient implements AutoCloseable {
         return callTool("browser_take_screenshot", args);
     }
 
-    /** Reads the accessibility snapshot of the current page as text. */
+    /**
+     * Reads the accessibility snapshot of the current page as text.
+     *
+     * <p>For large pages the MCP server answers with a file reference
+     * ({@code - [Snapshot](test output/playwright-mcp/page-….yml)}) instead of inline YAML. That reference is
+     * useless to a caller that needs the {@code [ref=eN]} tokens, so the file is read and inlined here.</p>
+     */
     public String snapshot() throws IOException {
-        return callTool("browser_snapshot", new JsonObject());
+        String text = callTool("browser_snapshot", new JsonObject());
+        return inlineSnapshotReference(text);
+    }
+
+    /** Replaces a {@code [Snapshot](path)} link with the content of that YAML file. */
+    private static String inlineSnapshotReference(String text) {
+        if (text == null) {
+            return "";
+        }
+        java.util.regex.Matcher matcher =
+                java.util.regex.Pattern.compile("\\[Snapshot\\]\\(([^)]+)\\)").matcher(text);
+        if (!matcher.find()) {
+            return text;
+        }
+        java.nio.file.Path file = java.nio.file.Paths.get(matcher.group(1).trim().replace('\\', java.io.File.separatorChar));
+        if (!file.isAbsolute()) {
+            file = java.nio.file.Paths.get(System.getProperty("user.dir")).resolve(file);
+        }
+        for (int attempt = 0; attempt < 20; attempt++) {
+            try {
+                if (java.nio.file.Files.isRegularFile(file)) {
+                    String yaml = java.nio.file.Files.readString(file);
+                    if (!yaml.isBlank()) {
+                        System.out.println("MCP snapshot inlined from file: " + file.getFileName());
+                        return text.substring(0, matcher.start())
+                                + "\n```yaml\n" + yaml + "\n```\n"
+                                + text.substring(matcher.end());
+                    }
+                }
+                Thread.sleep(150);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception unreadable) {
+                break;
+            }
+        }
+        return text;
     }
 
     @Override
@@ -214,6 +257,17 @@ public class McpPlaywrightClient implements AutoCloseable {
         cmd.add("--ignore-https-errors");
         cmd.add("--output-dir");
         cmd.add(System.getProperty("mcp.playwright.outputDir", "test output/playwright-mcp"));
+        // Optional viewport, e.g. a maximised window or the size the mockups were captured at.
+        String viewport = System.getProperty("mcp.playwright.viewport", "");
+        if (!viewport.isBlank()) {
+            cmd.add("--viewport-size");
+            cmd.add(viewport.trim());
+        }
+        // In-memory profile: a previous run must not leave the browser logged in / carrying stale state.
+        // Set -Dmcp.playwright.isolated=false to reuse the on-disk profile while debugging.
+        if (!"false".equalsIgnoreCase(System.getProperty("mcp.playwright.isolated", "true"))) {
+            cmd.add("--isolated");
+        }
         if ("true".equalsIgnoreCase(System.getProperty("mcp.playwright.headless", "false"))) {
             cmd.add("--headless");
         }

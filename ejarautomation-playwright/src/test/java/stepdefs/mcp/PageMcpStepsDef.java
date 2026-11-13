@@ -35,6 +35,8 @@ public class PageMcpStepsDef {
     private static final String DEEPSEEK_SCREENSHOT = "deepseek-verification.png";
     /** Page screenshot captured for the mockup comparison, kept next to the other MCP artefacts. */
     private static final String MOCKUP_SCREENSHOT = "mockup-compare-page.png";
+    /** Screenshot captured for the DeepSeek verification steps. */
+    private static final String VERIFY_SCREENSHOT = "deepseek-verification-checklist.png";
 
     /** Used only when the DeepSeek step is written without a docstring checklist. */
     private static final String DEFAULT_LOGIN_CHECKLIST =
@@ -55,9 +57,34 @@ public class PageMcpStepsDef {
     @Given("^the Playwright MCP browser is started$")
     public void startPlaywrightMcpBrowser() throws Exception {
         timed("Given the Playwright MCP browser is started", () -> {
+            maximiseBrowserViewport();
             mcp = new McpPlaywrightClient();
             mcp.start();
         });
+    }
+
+    /**
+     * Opens the MCP browser at the maximum usable viewport instead of its small default window.
+     *
+     * <p>The size is derived from the screen, leaving room for the browser chrome and taskbar. Override it
+     * with {@code -Dmcp.playwright.viewport=1280,698} (the size the booking mockups were captured at) or
+     * disable the behaviour entirely with {@code -Dmcp.playwright.maximize=false}.</p>
+     */
+    private static void maximiseBrowserViewport() {
+        if ("false".equalsIgnoreCase(System.getProperty("mcp.playwright.maximize", "true"))
+                || !System.getProperty("mcp.playwright.viewport", "").isBlank()) {
+            return;
+        }
+        try {
+            java.awt.Dimension screen = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+            int width = Math.max(1024, screen.width);
+            int height = Math.max(700, screen.height - 110);
+            System.setProperty("mcp.playwright.viewport", width + "," + height);
+            System.out.println("MCP browser viewport set to maximum: " + width + "x" + height
+                    + " (screen " + screen.width + "x" + screen.height + ")");
+        } catch (Throwable t) {
+            System.out.println("MCP browser viewport could not be maximised: " + t.getMessage());
+        }
     }
 
     @When("^I open the Yelo login page at \"(.*)\"$")
@@ -145,6 +172,53 @@ public class PageMcpStepsDef {
         });
     }
 
+    // ---------------------------------------------------------------- AI-driven steps
+    // The agent decides what to do from the MCP accessibility snapshot; the step only executes its choice,
+    // so nothing here knows selectors or JavaScript.
+
+    /** Lets DeepSeek choose and execute the browser actions needed to reach the described goal. */
+    @When("^DeepSeek performs the action \"([^\"]*)\"$")
+    public void deepSeekPerforms(String goal) throws Exception {
+        timed("When DeepSeek performs the action \"" + goal + "\"", () -> {
+            requireClient();
+            new automation.framework.ai.DeepSeekPageAgent().act(mcp, goal);
+        });
+    }
+
+    /** Vision check: the given phrase is visible on the page. */
+    @Then("^DeepSeek confirms the page shows \"([^\"]*)\"$")
+    public void deepSeekConfirmsText(String text) throws Exception {
+        timed("Then DeepSeek confirms the page shows \"" + text + "\"", () ->
+                assertVision("- The text \"" + text + "\" is visible on the page."));
+    }
+
+    /** Vision check: no error banner, toast, validation failure or stack trace is visible. */
+    @Then("^DeepSeek confirms the page shows no error message$")
+    public void deepSeekConfirmsNoError() throws Exception {
+        timed("And DeepSeek confirms the page shows no error message", () ->
+                assertVision("- No error message, error toast, validation failure, stack trace or "
+                        + "'something went wrong' text is visible on the page."));
+    }
+
+    /** Vision check: the save confirmation is on screen. */
+    @Then("^DeepSeek confirms the booking was saved successfully$")
+    public void deepSeekConfirmsBookingSaved() throws Exception {
+        timed("Then DeepSeek confirms the booking was saved successfully", () ->
+                assertVision("- A success confirmation (for example \"Saved successfully\") is visible.\n"
+                        + "- The page shows the bookings list rather than the creation form."));
+    }
+
+    private void assertVision(String checklist) throws Exception {
+        requireClient();
+        String path = MCP_OUTPUT_DIR + VERIFY_SCREENSHOT;
+        mcp.screenshot(path);
+        byte[] png = Files.readAllBytes(Paths.get(path));
+        DeepSeekVisionValidator.Verdict verdict = new DeepSeekVisionValidator()
+                .validate(png, "Verification of the current screen", checklist);
+        System.out.println("DeepSeek verification: " + verdict);
+        Assert.assertTrue("DeepSeek could not confirm the page state (" + verdict + "). Findings: "
+                + verdict.getFindings(), verdict.isPass());
+    }
     /** Safety net: never leave the server (and its browser) running if a step fails. */
     @After
     public void stopBrowserAfterScenario() {
