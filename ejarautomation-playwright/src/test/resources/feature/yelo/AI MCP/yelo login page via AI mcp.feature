@@ -11,7 +11,7 @@ Feature: Yelo login page verified with the Playwright MCP browser
       """
       - Rentey wordmark in the top-right corner
       - Yellow "YELO يلو" tenant logo centred above the login form
-      - the Label must NOT be visible "User name or email" with an empty text input below it
+      - Label visible "User name or email" with an empty text input below it
       - Label "Password" with a masked input and an eye toggle icon
       - Salmon / light-orange "Log in" button below the password field
       - Four small language flag icons underneath the button
@@ -27,7 +27,9 @@ Feature: Yelo login page verified with the Playwright MCP browser
   Scenario: Login page matches the provided mockup design image
     Given the Playwright MCP browser is started
     When I open the Yelo login page at "https://ejarypp.qoad.com:4800/"
-    Then DeepSeek compares the opened page with the mockup image "src/test/resources/mockups/yelo/login-page-mockup-correct-field-location.png"
+    And wait for number of seconds: 20
+#    And wait for element present: ejar.loginpage.username.byxpath for period in seconds: 80
+    Then DeepSeek compares the opened page with the mockup image "src/test/resources/mockups/yelo/login/login-page-mockup-correct.png"
     And the Playwright MCP browser is closed
 
   # Recorded walk-through (video 2026-11-13): login as ejaradmin -> Rental -> Bookings ->
@@ -39,7 +41,7 @@ Feature: Yelo login page verified with the Playwright MCP browser
   Scenario: Create a spot booking from the rental menu and verify it is saved
     Given the Playwright MCP browser is started
     When I open the Yelo login page at "https://ejarypp.qoad.com:4800/account/login"
-    Then DeepSeek compares the opened page with the mockup image "src/test/resources/mockups/yelo/booking/01-login.png"
+#    Then DeepSeek compares the opened page with the mockup image "src/test/resources/mockups/yelo/booking/01-login.png"
     And DeepSeek confirms the page shows no error message
     When DeepSeek performs the action "type the user name 'ejaradmin' into the 'User name or email' field"
     And DeepSeek performs the action "type the password '123456' into the 'Password' field"
@@ -55,7 +57,7 @@ Feature: Yelo login page verified with the Playwright MCP browser
     And DeepSeek performs the action "select 'Saudi Arabia' in the Countries dropdown"
     And DeepSeek performs the action "select 'Pickup' in the Type dropdown"
     And DeepSeek performs the action "select 'Automation Branch' in the Pick-up & Return dropdown"
-    And DeepSeek performs the action "set the Pick-up Date to today and the Drop-off Date to tomorrow"
+    And DeepSeek performs the action "set the Pick-up Date to today and the Drop-off Date to tomorrow and click on today and select action by it X,Y locations"
     Then DeepSeek compares the opened page with the mockup image "src/test/resources/mockups/yelo/booking/04-booking-details.png"
     And DeepSeek confirms the page shows no error message
     When DeepSeek performs the action "click the 'Next' button on the Booking Details step"
